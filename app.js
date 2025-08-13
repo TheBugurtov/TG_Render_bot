@@ -76,7 +76,7 @@ async function handleMessage(msg) {
   if (results.length === 0) {
     await sendMessage(chatId, `Компоненты по запросу "${text}" не найдены. Попробуйте использовать более общий запрос, например "Кнопка", "Checkbox" и т.п.`);
   } else {
-    await sendMessage(chatId, `Найдено ${results.length} :\n\n${results.join('\n\n')}`);
+    await sendMessage(chatId, `Найдено: ${results.length} \n\n${results.join('\n\n')}`);
   }
 }
 
