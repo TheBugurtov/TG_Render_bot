@@ -1,15 +1,14 @@
-const express = require('express');
 const fetch = require('node-fetch');
-const fs = require('fs');
 const { parse } = require('csv-parse/sync');
-
-const app = express();
-app.use(express.json());
+const TelegramBot = require('node-telegram-bot-api');
 
 // --- Настройки ---
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const PORT = process.env.PORT || 3000;
 const CSV_URL = 'https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Google-Sheets/main/components.csv';
+
+// --- Инициализация бота (polling) ---
+const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+console.log('Bot started...');
 
 // --- Функция поиска ---
 async function searchComponents(query) {
@@ -24,41 +23,33 @@ async function searchComponents(query) {
   const q = query.toLowerCase();
   const found = records.filter(r => r.Tags.toLowerCase().includes(q));
 
-  return found.map(r => `Название: ${r.Component}\nГруппа: ${r.File}\nСсылка: ${r.Link}`);
+  return found.map(
+    r => `Название: ${r.Component}\nГруппа: ${r.File}\nСсылка: ${r.Link}`
+  );
 }
 
-// --- Webhook endpoint ---
-app.post(`/${BOT_TOKEN}`, async (req, res) => {
+// --- Обработка сообщений ---
+bot.onText(/(.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const query = match[1].trim();
+
+  if (!query) return;
+
   try {
-    const msg = req.body.message;
-    if (!msg || !msg.text) return res.sendStatus(200);
-
-    const chatId = msg.chat.id;
-    const text = msg.text.trim();
-
-    const results = await searchComponents(text);
+    const results = await searchComponents(query);
 
     let reply = '';
     if (results.length === 0) {
-      reply = `Компоненты по запросу "${text}" не найдены`;
+      reply = `Компоненты по запросу "${query}" не найдены`;
     } else {
-      reply = `Найдено ${results.length} компонента(ов):\n\n${results.join('\n\n')}`;
+      reply = `Найдено ${results.length} компонента(ов):\n\n${results.join(
+        '\n\n'
+      )}`;
     }
 
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: reply })
-    });
-
-    res.sendStatus(200);
+    bot.sendMessage(chatId, reply);
   } catch (err) {
     console.error(err);
-    res.sendStatus(500);
+    bot.sendMessage(chatId, 'Произошла ошибка при поиске компонента.');
   }
-});
-
-// --- Запуск сервера ---
-app.listen(PORT, () => {
-  console.log(`Bot listening on port ${PORT}`);
 });
