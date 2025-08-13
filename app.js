@@ -66,7 +66,7 @@ async function handleMessage(msg) {
   }
 
   if (text === 'Поиск в дизайн-системе') {
-    await sendMessage(chatId, 'Введите название компонента для поиска');
+    await sendMessage(chatId, 'Введите название компонента для поиска:');
     return;
   }
 
@@ -74,9 +74,9 @@ async function handleMessage(msg) {
   const results = await searchComponents(text);
 
   if (results.length === 0) {
-    await sendMessage(chatId, `Компоненты по запросу "${text}" не найдены`);
+    await sendMessage(chatId, `Компоненты по запросу "${text}" не найдены. Попробуйте использовать более общий запрос, например "Кнопка", "Checkbox" и т.п.`);
   } else {
-    await sendMessage(chatId, `Найдено ${results.length} компонента(ов):\n\n${results.join('\n\n')}`);
+    await sendMessage(chatId, `Найдено ${results.length} :\n\n${results.join('\n\n')}`);
   }
 }
 
