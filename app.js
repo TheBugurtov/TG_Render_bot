@@ -61,7 +61,7 @@ async function handleMessage(msg) {
   }
 
   if (text === 'Посмотреть последние изменения') {
-    await sendMessage(chatId, 'Ссылка на последние изменения: https://t.me/c/1397080567/12194');
+    await sendMessage(chatId, 'Последние изменения в DS GRANAT: https://t.me/c/1397080567/12194');
     return;
   }
 
