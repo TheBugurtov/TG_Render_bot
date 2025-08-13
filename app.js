@@ -1,7 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const fs = require('fs');
-const { parse } = require('csv-parse/sync');
+const parse = require('csv-parse/lib/sync');
 
 const app = express();
 app.use(express.json());
