@@ -5,8 +5,7 @@
   "type": "commonjs",
   "dependencies": {
     "csv-parse": "^5.5.0",
-    "node-fetch": "^2.6.7",
-    "node-telegram-bot-api": "^0.61.0"
+    "node-fetch": "^2.6.7"
   },
   "scripts": {
     "start": "node app.js"

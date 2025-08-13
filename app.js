@@ -1,14 +1,9 @@
 const fetch = require('node-fetch');
 const { parse } = require('csv-parse/sync');
-const TelegramBot = require('node-telegram-bot-api');
 
 // --- Настройки ---
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CSV_URL = 'https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Google-Sheets/main/components.csv';
-
-// --- Инициализация бота (polling) ---
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
-console.log('Bot started...');
 
 // --- Функция поиска ---
 async function searchComponents(query) {
@@ -23,33 +18,55 @@ async function searchComponents(query) {
   const q = query.toLowerCase();
   const found = records.filter(r => r.Tags.toLowerCase().includes(q));
 
-  return found.map(
-    r => `Название: ${r.Component}\nГруппа: ${r.File}\nСсылка: ${r.Link}`
-  );
+  return found.map(r => `Название: ${r.Component}\nГруппа: ${r.File}\nСсылка: ${r.Link}`);
 }
 
-// --- Обработка сообщений ---
-bot.onText(/(.+)/, async (msg, match) => {
+// --- Функция обработки входящих сообщений ---
+async function handleMessage(msg) {
   const chatId = msg.chat.id;
-  const query = match[1].trim();
+  const text = msg.text.trim();
 
-  if (!query) return;
+  const results = await searchComponents(text);
 
-  try {
-    const results = await searchComponents(query);
+  let reply = '';
+  if (results.length === 0) {
+    reply = `Компоненты по запросу "${text}" не найдены`;
+  } else {
+    reply = `Найдено ${results.length} компонента(ов):\n\n${results.join('\n\n')}`;
+  }
 
-    let reply = '';
-    if (results.length === 0) {
-      reply = `Компоненты по запросу "${query}" не найдены`;
-    } else {
-      reply = `Найдено ${results.length} компонента(ов):\n\n${results.join(
-        '\n\n'
-      )}`;
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text: reply })
+  });
+}
+
+// --- Пуллинг Telegram API ---
+async function poll() {
+  let offset = 0;
+
+  while (true) {
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?timeout=30&offset=${offset}`);
+      const data = await res.json();
+
+      if (data.ok && data.result.length > 0) {
+        for (const update of data.result) {
+          if (update.message && update.message.text) {
+            handleMessage(update.message);
+            offset = update.update_id + 1;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Ошибка при getUpdates:', err);
     }
 
-    bot.sendMessage(chatId, reply);
-  } catch (err) {
-    console.error(err);
-    bot.sendMessage(chatId, 'Произошла ошибка при поиске компонента.');
+    await new Promise(r => setTimeout(r, 1000)); // 1 сек задержка между запросами
   }
-});
+}
+
+// --- Старт ---
+console.log('Bot started...');
+poll();
