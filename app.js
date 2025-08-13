@@ -66,7 +66,7 @@ async function handleMessage(msg) {
   }
 
   if (text === 'Поиск в дизайн-системе') {
-    await sendMessage(chatId, 'Что бы вы хотели найти?');
+    await sendMessage(chatId, 'Введите название компонента для поиска');
     return;
   }
 
