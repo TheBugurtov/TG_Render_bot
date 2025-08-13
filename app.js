@@ -1,9 +1,13 @@
 const fetch = require('node-fetch');
 const { parse } = require('csv-parse/sync');
+const express = require('express');
+
+const app = express();
 
 // --- Настройки ---
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CSV_URL = 'https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Google-Sheets/main/components.csv';
+const PORT = process.env.PORT || 10000;
 
 // --- Функция поиска ---
 async function searchComponents(query) {
@@ -21,7 +25,7 @@ async function searchComponents(query) {
   return found.map(r => `Название: ${r.Component}\nГруппа: ${r.File}\nСсылка: ${r.Link}`);
 }
 
-// --- Функция обработки входящих сообщений ---
+// --- Обработка сообщений ---
 async function handleMessage(msg) {
   const chatId = msg.chat.id;
   const text = msg.text.trim();
@@ -42,7 +46,7 @@ async function handleMessage(msg) {
   });
 }
 
-// --- Пуллинг Telegram API ---
+// --- Пуллинг Telegram ---
 async function poll() {
   let offset = 0;
 
@@ -63,10 +67,16 @@ async function poll() {
       console.error('Ошибка при getUpdates:', err);
     }
 
-    await new Promise(r => setTimeout(r, 1000)); // 1 сек задержка между запросами
+    await new Promise(r => setTimeout(r, 1000));
   }
 }
 
-// --- Старт ---
-console.log('Bot started...');
-poll();
+// --- Web Endpoint для Render ---
+app.get('/', (req, res) => {
+  res.send('Bot is running...');
+});
+
+app.listen(PORT, () => {
+  console.log(`Bot listening on port ${PORT}`);
+  poll(); // старт пуллинга после старта сервера
+});
