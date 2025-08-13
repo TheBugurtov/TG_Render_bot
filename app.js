@@ -22,7 +22,16 @@ async function searchComponents(query) {
   const q = query.toLowerCase();
   const found = records.filter(r => r.Tags.toLowerCase().includes(q));
 
-  return found.map(r => `Название: ${r.Component}\nГруппа: ${r.File}\nСсылка: ${r.Link}`);
+  return found.map(r => `*${r.Component}* из *${r.File}*\n${r.Link}`);
+}
+
+// --- Отправка сообщения в Telegram ---
+async function sendMessage(chatId, text, extra = {}) {
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown', ...extra })
+  });
 }
 
 // --- Обработка сообщений ---
@@ -30,20 +39,45 @@ async function handleMessage(msg) {
   const chatId = msg.chat.id;
   const text = msg.text.trim();
 
-  const results = await searchComponents(text);
-
-  let reply = '';
-  if (results.length === 0) {
-    reply = `Компоненты по запросу "${text}" не найдены`;
-  } else {
-    reply = `Найдено ${results.length} компонента(ов):\n\n${results.join('\n\n')}`;
+  // Проверяем кнопки
+  if (text === '/start') {
+    await sendMessage(chatId, `Добрый день!\nЯ помощник Дизайн-системы. Постараюсь помочь в решении проблем.`, {
+      reply_markup: {
+        keyboard: [
+          ['Поиск в дизайн-системе'],
+          ['Отправить запрос/баг'],
+          ['Посмотреть последние изменения']
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: false
+      }
+    });
+    return;
   }
 
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text: reply })
-  });
+  if (text === 'Отправить запрос/баг') {
+    await sendMessage(chatId, 'В разработке');
+    return;
+  }
+
+  if (text === 'Посмотреть последние изменения') {
+    await sendMessage(chatId, 'Ссылка на последние изменения: https://t.me/c/1397080567/12194');
+    return;
+  }
+
+  if (text === 'Поиск в дизайн-системе') {
+    await sendMessage(chatId, 'Что бы вы хотели найти?');
+    return;
+  }
+
+  // Поиск компонентов
+  const results = await searchComponents(text);
+
+  if (results.length === 0) {
+    await sendMessage(chatId, `Компоненты по запросу "${text}" не найдены`);
+  } else {
+    await sendMessage(chatId, `Найдено ${results.length} компонента(ов):\n\n${results.join('\n\n')}`);
+  }
 }
 
 // --- Пуллинг Telegram ---
