@@ -9,6 +9,20 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const CSV_URL = 'https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Google-Sheets/main/components.csv';
 const PORT = process.env.PORT || 10000;
 
+// --- Главное меню ---
+const mainMenu = {
+  reply_markup: {
+    keyboard: [
+      ['Найти компонент'],
+      ['Изучить гайды', 'Предложить доработку'],
+      ['Добавить иконку или логотип', 'Посмотреть последние изменения'],
+      ['Поддержка']
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false
+  }
+};
+
 // --- Функция поиска ---
 async function searchComponents(query) {
   const res = await fetch(CSV_URL);
@@ -39,44 +53,119 @@ async function handleMessage(msg) {
   const chatId = msg.chat.id;
   const text = msg.text.trim();
 
-  // Проверяем кнопки
+  // Старт
   if (text === '/start') {
-    await sendMessage(chatId, `Добрый день!\nЯ помощник Дизайн-системы. Постараюсь помочь в решении проблем.`, {
-      reply_markup: {
-        keyboard: [
-          ['Поиск в дизайн-системе'],
-          ['Отправить запрос/баг'],
-          ['Посмотреть последние изменения']
-        ],
-        resize_keyboard: true,
-        one_time_keyboard: false
-      }
-    });
+    await sendMessage(chatId, `Добрый день!\nЯ помощник Дизайн-системы. Постараюсь помочь в решении проблем.`, mainMenu);
     return;
   }
 
-  if (text === 'Отправить запрос/баг') {
-    await sendMessage(chatId, 'В разработке');
+  // Назад в меню
+  if (text === 'Назад') {
+    await sendMessage(chatId, `Вы в главном меню:`, mainMenu);
     return;
   }
 
+  // Найти компонент
+  if (text === 'Найти компонент') {
+    await sendMessage(chatId, 'Введите название компонента для поиска:');
+    return;
+  }
+
+  // Изучить гайды
+  if (text === 'Изучить гайды') {
+    await sendMessage(chatId, 
+`Общий список гайдлайнов DS Granat:
+https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20673
+
+Color Hierarchy
+https://www.figma.com/design/iqTCxAPRJJm6UlANLlYfva/Variables?node-id=48097-1187
+
+Typography
+https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=313-8196
+
+Themization
+https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=186-429
+
+Buttons
+https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=154-386
+
+Cards
+https://www.figma.com/design/oZGlxnWyOHTAgG6cyLkNJh/Web-Components-Molecules-2.0?node-id=141917-4145
+
+Fieldset
+https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=178-384
+
+Modal
+https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=178-386
+
+Skeleton
+https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=154-385
+
+Statuses Color Code
+https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=659-70
+
+Interface Icons
+https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=547-206394
+
+Product Icons Guide
+https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=23895-7907
+
+MTS Logos Presets
+https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=29711-16374
+
+Selection
+https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=31-1794
+
+Loading
+https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20669`,
+      { reply_markup: { keyboard: [['Назад']], resize_keyboard: true } }
+    );
+    return;
+  }
+
+  // Предложить доработку
+  if (text === 'Предложить доработку') {
+    await sendMessage(chatId, 
+`Вы можете предложить доработку по ссылке:
+https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new`,
+      { reply_markup: { keyboard: [['Назад']], resize_keyboard: true } }
+    );
+    return;
+  }
+
+  // Добавить иконку или логотип
+  if (text === 'Добавить иконку или логотип') {
+    await sendMessage(chatId, 
+`Вы можете добавить иконку или логотип по ссылке:
+https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new`,
+      { reply_markup: { keyboard: [['Назад']], resize_keyboard: true } }
+    );
+    return;
+  }
+
+  // Последние изменения
   if (text === 'Посмотреть последние изменения') {
     await sendMessage(chatId, 'Последние изменения в DS GRANAT: https://t.me/c/1397080567/12194');
     return;
   }
 
-  if (text === 'Поиск в дизайн-системе') {
-    await sendMessage(chatId, 'Введите название компонента для поиска:');
+  // Поддержка
+  if (text === 'Поддержка') {
+    await sendMessage(chatId, 
+`Если вам необходима поддержка, пишите на почту:
+kuskova@mts.ru`,
+      { reply_markup: { keyboard: [['Назад']], resize_keyboard: true } }
+    );
     return;
   }
 
-  // Поиск компонентов
+  // Поиск компонентов по тексту
   const results = await searchComponents(text);
 
   if (results.length === 0) {
-    await sendMessage(chatId, `Компоненты по запросу "${text}" не найдены. \nПопробуйте использовать более общий запрос, например "Кнопка", "Checkbox" и т.п.`);
+    await sendMessage(chatId, `Компоненты по запросу "${text}" не найдены.\nПопробуйте использовать более общий запрос, например "Кнопка", "Checkbox" и т.п.`);
   } else {
-    await sendMessage(chatId, `Найдено: ${results.length} \n\n${results.join('\n\n')}`);
+    await sendMessage(chatId, `Найдено: ${results.length}\n\n${results.join('\n\n')}`);
   }
 }
 
