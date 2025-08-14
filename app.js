@@ -9,6 +9,9 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const CSV_URL = 'https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Google-Sheets/main/components.csv';
 const PORT = process.env.PORT || 10000;
 
+// --- Хранилище состояний пользователей ---
+const state = {};
+
 // --- Главное меню ---
 const mainMenu = {
   reply_markup: {
@@ -53,26 +56,30 @@ async function handleMessage(msg) {
   const chatId = msg.chat.id;
   const text = msg.text.trim();
 
-  // Старт
-  if (text === '/start') {
-    await sendMessage(chatId, `Добрый день!\nЯ помощник Дизайн-системы. Постараюсь помочь в решении проблем.`, mainMenu);
-    return;
-  }
-
-  // Назад в меню
+  // --- Кнопка Назад ---
   if (text === 'Назад') {
+    state[chatId] = null;
     await sendMessage(chatId, `Вы в главном меню:`, mainMenu);
     return;
   }
 
-  // Найти компонент
-  if (text === 'Найти компонент') {
-    await sendMessage(chatId, 'Введите название компонента для поиска:');
+  // --- Старт ---
+  if (text === '/start') {
+    state[chatId] = null;
+    await sendMessage(chatId, `Добрый день!\nЯ помощник Дизайн-системы. Постараюсь помочь в решении проблем.`, mainMenu);
     return;
   }
 
-  // Изучить гайды
+  // --- Найти компонент ---
+  if (text === 'Найти компонент') {
+    state[chatId] = 'search';
+    await sendMessage(chatId, 'Введите название компонента для поиска:', { reply_markup: { keyboard: [['Назад']], resize_keyboard: true } });
+    return;
+  }
+
+  // --- Изучить гайды ---
   if (text === 'Изучить гайды') {
+    state[chatId] = null;
     await sendMessage(chatId, 
 `Общий список гайдлайнов DS Granat:
 https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20673
@@ -123,8 +130,9 @@ https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=18
     return;
   }
 
-  // Предложить доработку
+  // --- Предложить доработку ---
   if (text === 'Предложить доработку') {
+    state[chatId] = null;
     await sendMessage(chatId, 
 `Вы можете предложить доработку по ссылке:
 https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new`,
@@ -133,8 +141,9 @@ https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/i
     return;
   }
 
-  // Добавить иконку или логотип
+  // --- Добавить иконку ---
   if (text === 'Добавить иконку или логотип') {
+    state[chatId] = null;
     await sendMessage(chatId, 
 `Вы можете добавить иконку или логотип по ссылке:
 https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new`,
@@ -143,14 +152,16 @@ https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/i
     return;
   }
 
-  // Последние изменения
+  // --- Последние изменения ---
   if (text === 'Посмотреть последние изменения') {
+    state[chatId] = null;
     await sendMessage(chatId, 'Последние изменения в DS GRANAT: https://t.me/c/1397080567/12194');
     return;
   }
 
-  // Поддержка
+  // --- Поддержка ---
   if (text === 'Поддержка') {
+    state[chatId] = null;
     await sendMessage(chatId, 
 `Если вам необходима поддержка, пишите на почту:
 kuskova@mts.ru`,
@@ -159,13 +170,15 @@ kuskova@mts.ru`,
     return;
   }
 
-  // Поиск компонентов по тексту
-  const results = await searchComponents(text);
-
-  if (results.length === 0) {
-    await sendMessage(chatId, `Компоненты по запросу "${text}" не найдены.\nПопробуйте использовать более общий запрос, например "Кнопка", "Checkbox" и т.п.`);
-  } else {
-    await sendMessage(chatId, `Найдено: ${results.length}\n\n${results.join('\n\n')}`);
+  // --- Обработка поиска только в режиме search ---
+  if (state[chatId] === 'search') {
+    const results = await searchComponents(text);
+    if (results.length === 0) {
+      await sendMessage(chatId, `Компоненты по запросу "${text}" не найдены.\nПопробуйте использовать более общий запрос, например "Кнопка", "Checkbox" и т.п.`);
+    } else {
+      await sendMessage(chatId, `Найдено: ${results.length}\n\n${results.join('\n\n')}`);
+    }
+    return;
   }
 }
 
@@ -201,5 +214,5 @@ app.get('/', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Bot listening on port ${PORT}`);
-  poll(); // старт пуллинга после старта сервера
+  poll();
 });
