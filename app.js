@@ -51,36 +51,35 @@ async function sendMessage(chatId, text, extra = {}) {
   });
 }
 
-// --- Обработка сообщений ---
+// --- Основная обработка сообщений ---
 async function handleMessage(msg) {
   const chatId = msg.chat.id;
   const text = msg.text.trim();
+  const lower = text.toLowerCase();
 
-  // --- Кнопка Назад ---
-  if (text === 'Назад') {
+  // --- Назад ---
+  if (lower === 'назад') {
     state[chatId] = null;
     await sendMessage(chatId, `Вы в главном меню:`, mainMenu);
     return;
   }
 
-  // --- Старт ---
-  if (text === '/start') {
+  // --- Команды или кнопки ---
+  if (lower === '/start') {
     state[chatId] = null;
     await sendMessage(chatId, `Добрый день!\nЯ помощник Дизайн-системы. Постараюсь помочь в решении проблем.`, mainMenu);
     return;
   }
 
-  // --- Найти компонент ---
-  if (text === 'Найти компонент') {
+  if (lower === '/search' || lower === 'найти компонент') {
     state[chatId] = 'search';
     await sendMessage(chatId, 'Введите название компонента для поиска:', { reply_markup: { keyboard: [['Назад']], resize_keyboard: true } });
     return;
   }
 
-  // --- Изучить гайды ---
-  if (text === 'Изучить гайды') {
+  if (lower === '/guides' || lower === 'изучить гайды') {
     state[chatId] = null;
-    await sendMessage(chatId, 
+    await sendMessage(chatId,
 `Общий список гайдлайнов DS Granat:
 https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20673
 
@@ -130,10 +129,9 @@ https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=18
     return;
   }
 
-  // --- Предложить доработку ---
-  if (text === 'Предложить доработку') {
+  if (lower === '/suggest' || lower === 'предложить доработку') {
     state[chatId] = null;
-    await sendMessage(chatId, 
+    await sendMessage(chatId,
 `Вы можете предложить доработку по ссылке:
 https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new`,
       { reply_markup: { keyboard: [['Назад']], resize_keyboard: true } }
@@ -141,10 +139,9 @@ https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/i
     return;
   }
 
-  // --- Добавить иконку ---
-  if (text === 'Добавить иконку или логотип') {
+  if (lower === '/icon' || lower === 'добавить иконку или логотип') {
     state[chatId] = null;
-    await sendMessage(chatId, 
+    await sendMessage(chatId,
 `Вы можете добавить иконку или логотип по ссылке:
 https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new`,
       { reply_markup: { keyboard: [['Назад']], resize_keyboard: true } }
@@ -152,17 +149,15 @@ https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/i
     return;
   }
 
-  // --- Последние изменения ---
-  if (text === 'Посмотреть последние изменения') {
+  if (lower === '/changes' || lower === 'посмотреть последние изменения') {
     state[chatId] = null;
     await sendMessage(chatId, 'Последние изменения в DS GRANAT: https://t.me/c/1397080567/12194');
     return;
   }
 
-  // --- Поддержка ---
-  if (text === 'Поддержка') {
+  if (lower === '/support' || lower === 'поддержка') {
     state[chatId] = null;
-    await sendMessage(chatId, 
+    await sendMessage(chatId,
 `Если вам необходима поддержка, пишите на почту:
 kuskova@mts.ru`,
       { reply_markup: { keyboard: [['Назад']], resize_keyboard: true } }
@@ -185,12 +180,10 @@ kuskova@mts.ru`,
 // --- Пуллинг Telegram ---
 async function poll() {
   let offset = 0;
-
   while (true) {
     try {
       const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?timeout=30&offset=${offset}`);
       const data = await res.json();
-
       if (data.ok && data.result.length > 0) {
         for (const update of data.result) {
           if (update.message && update.message.text) {
@@ -202,7 +195,6 @@ async function poll() {
     } catch (err) {
       console.error('Ошибка при getUpdates:', err);
     }
-
     await new Promise(r => setTimeout(r, 1000));
   }
 }
