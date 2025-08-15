@@ -171,16 +171,38 @@ if (lower === '/suggest' || lower === 'предложить доработку')
 }
 
 
-  // --- Добавить иконку или логотип ---
-  if (lower === '/icon' || lower === 'добавить иконку или логотип') {
-    state[chatId] = null;
-    await sendMessage(chatId,
-`Вы можете добавить иконку или логотип по ссылке:
-https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new`,
-      { reply_markup: { keyboard: [['Назад']], resize_keyboard: true } }
-    );
-    return;
+// --- Добавить иконку или логотип ---
+if (lower === '/icon' || lower === 'добавить иконку или логотип') {
+  state[chatId] = null;
+  await sendMessage(chatId,
+`➡️ Интерфейсные иконки
+
+Недостающие интерфейсные иконки продукт создает своими силами или нанимает подрядчика. Созданные иконки проходят ревью и согласование у дизайн лида или арт-директора продукта.
+Ознакомьтесь <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">с требованиями к иконкам.</a>
+
+Иконка нарисована?
+
+Для создания запроса на публикацию используется <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">GitLab.</a> Прикрепите к запросу ссылку на готовый компонент.
+
+Дизайн-система спланирует ревью компонента в спринт в соответствии с текущими приоритетами. При успешном прохождении ревью дизайнер ДС добавит иконку в библиотеку и опубликует обновление. Если иконка не соответствует гайдам, дизайнер ДС оставит фидбек в виде комментария к запросу продукта в GitLab.
+
+➡️ Продуктовые иконки и логотипы
+
+Продуктовые иконки для мобильных приложений создаются по <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">экосистемному гайду.</a>
+Для логотипов веб-сервисов существуют <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=29711-16375&t=DumT4AudgflUKzRs-4">компоненты-шаблоны.</a>
+
+Любую новую иконку или логотип необходимо согласовать с Департаментом Маркетинговых Коммуникаций.
+
+Чтобы добавить продуктовую иконку или логотип в ДС, создайте запрос <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=29711-16375&t=DumT4AudgflUKzRs-4">в GitLab.</a>
+`,
+  {
+    reply_markup: { keyboard: [['Назад']], resize_keyboard: true },
+    parse_mode: 'HTML'
   }
+  );
+  return;
+}
+
 
   // --- Посмотреть последние изменения ---
   if (lower === '/changes' || lower === 'посмотреть последние изменения') {
