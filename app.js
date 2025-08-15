@@ -34,27 +34,30 @@ async function searchComponents(query, type) {
 
   const records = parse(csvText, {
     columns: true,
-    skip_empty_lines: true
+    skip_empty_lines: true,
+    bom: true
   });
 
   const q = (query || '').toLowerCase().trim();
 
   let filtered = records.filter(r => {
-    // Нормализуем пробелы и разбиваем на массив тегов
-    const tagsArray = (r.Tags || '')
-      .replace(/\u00A0/g, ' ')     // неразрывные пробелы → обычные
+    // Улучшенная обработка тегов
+    const tags = (r.Tags || '')
+      .replace(/\s*,\s*/g, ',')   // Нормализация пробелов вокруг запятых
+      .toLowerCase()
       .split(',')
-      .map(t => t.trim().toLowerCase());
-
-    // ищем совпадение
-    return tagsArray.some(tag => tag.includes(q));
+      .map(t => t.trim());
+    
+    // Ищем точное или частичное совпадение
+    return tags.some(tag => tag === q || tag.includes(q));
   });
 
-  // фильтр по типу
+  // Упрощенная и надежная фильтрация по типу
   if (type === 'mobile') {
-    filtered = filtered.filter(r => r.File === 'App Components');
+    filtered = filtered.filter(r => r.File.trim() === 'App Components');
   } else if (type === 'web') {
-    filtered = filtered.filter(r => r.File !== 'App Components');
+    // Важно: используем trim() для обработки возможных пробелов
+    filtered = filtered.filter(r => r.File.trim() !== 'App Components');
   }
 
   return filtered.map(r => `*${r.Component}* из *${r.File}*\n${r.Link}`);
