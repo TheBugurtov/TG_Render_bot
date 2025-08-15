@@ -26,7 +26,7 @@ const mainMenu = {
   }
 };
 
-// --- Функция поиска ---
+// --- Функция поиска (исправленная) ---
 // Теперь принимает второй параметр type: 'mobile' | 'web' | undefined
 async function searchComponents(query, type) {
   const res = await fetch(CSV_URL);
@@ -37,15 +37,20 @@ async function searchComponents(query, type) {
     skip_empty_lines: true
   });
 
-  const q = (query || '').toLowerCase();
+  const q = (query || '').toLowerCase().trim();
 
-  // Изначальная фильтрация по Tags (как было)
   let filtered = records.filter(r => {
-    const tags = (r.Tags || '').toLowerCase();
-    return tags.includes(q);
+    // Нормализуем пробелы и разбиваем на массив тегов
+    const tagsArray = (r.Tags || '')
+      .replace(/\u00A0/g, ' ')     // неразрывные пробелы → обычные
+      .split(',')
+      .map(t => t.trim().toLowerCase());
+
+    // ищем совпадение
+    return tagsArray.some(tag => tag.includes(q));
   });
 
-  // Применяем дополнительный фильтр по типу
+  // фильтр по типу
   if (type === 'mobile') {
     filtered = filtered.filter(r => r.File === 'App Components');
   } else if (type === 'web') {
