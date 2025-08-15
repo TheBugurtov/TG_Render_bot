@@ -9,6 +9,11 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const CSV_URL = 'https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Google-Sheets/main/components.csv';
 const PORT = process.env.PORT || 10000;
 
+// --- Глобальный кэш для данных CSV ---
+let componentCache = null;
+let lastFetchTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 минут кэширования
+
 // --- Хранилище состояний пользователей ---
 const state = {};
 
@@ -26,17 +31,52 @@ const mainMenu = {
   }
 };
 
-// --- Функция поиска (исправленная) ---
-// Теперь принимает второй параметр type: 'mobile' | 'web' | undefined
-async function searchComponents(query, type) {
-  const res = await fetch(CSV_URL);
-  const csvText = await res.text();
+// --- Функция для получения данных с кэшированием ---
+async function getComponentData() {
+  const now = Date.now();
+  
+  // Если данные в кэше и не устарели
+  if (componentCache && now - lastFetchTime < CACHE_TTL) {
+    return componentCache;
+  }
+  
+  try {
+    // Загрузка новых данных
+    const res = await fetch(CSV_URL);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    
+    const csvText = await res.text();
+    componentCache = parse(csvText, {
+      columns: true,
+      skip_empty_lines: true,
+      bom: true
+    });
+    
+    lastFetchTime = now;
+    console.log('Данные CSV успешно обновлены');
+    return componentCache;
+  } catch (error) {
+    console.error('Ошибка загрузки CSV:', error);
+    
+    // Возвращаем старые данные, если есть
+    if (componentCache) {
+      console.log('Используем кэшированные данные из-за ошибки');
+      return componentCache;
+    }
+    
+    // Если кэша нет - возвращаем пустой массив
+    return [];
+  }
+}
 
-  const records = parse(csvText, {
-    columns: true,
-    skip_empty_lines: true,
-    bom: true
-  });
+// --- Функция поиска (с кэшированием) ---
+async function searchComponents(query, type) {
+  const records = await getComponentData();
+  
+  if (records.length === 0) {
+    console.error('Нет данных для поиска');
+    return [];
+  }
 
   const q = (query || '').toLowerCase().trim();
 
@@ -56,7 +96,6 @@ async function searchComponents(query, type) {
   if (type === 'mobile') {
     filtered = filtered.filter(r => r.File.trim() === 'App Components');
   } else if (type === 'web') {
-    // Важно: используем trim() для обработки возможных пробелов
     filtered = filtered.filter(r => r.File.trim() !== 'App Components');
   }
 
