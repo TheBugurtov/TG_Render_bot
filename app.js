@@ -113,58 +113,38 @@ async function handleMessage(msg) {
     return;
   }
 
-  // --- Изучить гайды ---
-  if (lower === '/guides' || lower === 'изучить гайды') {
-    state[chatId] = null;
-    await sendMessage(chatId,
-`Общий список гайдлайнов DS Granat:
-https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20673
+// --- Изучить гайды ---
+if (lower === '/guides' || lower === 'изучить гайды') {
+  state[chatId] = null;
+  await sendMessage(chatId,
+`Хранилище правил и рекомендаций дизайн-системы в Figma — <a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20673">Granat Guides.</a>
 
-Color Hierarchy
-https://www.figma.com/design/iqTCxAPRJJm6UlANLlYfva/Variables?node-id=48097-1187
+Быстрые ссылки на материалы:
 
-Typography
-https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=313-8196
+<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=313-8196">Гайд по типографике</a>
 
-Themization
-https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=186-429
+<a href="https://www.figma.com/design/iqTCxAPRJJm6UlANLlYfva/Variables?node-id=48097-1187">Иерархия цвета: cветлая и темная тема</a>
 
-Buttons
-https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=154-386
+Правила отрисовки <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=547-206394">интерфейсных иконок</a> и <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=23895-7907">продуктовых иконок</a>
 
-Cards
-https://www.figma.com/design/oZGlxnWyOHTAgG6cyLkNJh/Web-Components-Molecules-2.0?node-id=141917-4145
+<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=154-386">Кнопки: допустимая темизация, иерахия, расположение и пр.</a>
 
-Fieldset
-https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=178-384
+<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=154-385">Скелетная загрузка</a>
 
-Modal
-https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=178-386
+<a href="https://www.figma.com/design/oZGlxnWyOHTAgG6cyLkNJh/Web-Components-Molecules-2.0?node-id=141917-4145">Карточки в вебе</a>
 
-Skeleton
-https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=154-385
+<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=178-386">Модальные окна</a>
 
-Statuses Color Code
-https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=659-70
-
-Interface Icons
-https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=547-206394
-
-Product Icons Guide
-https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=23895-7907
-
-MTS Logos Presets
-https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=29711-16374
-
-Selection
-https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=31-1794
-
-Loading
-https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20669`,
-      { reply_markup: { keyboard: [['Назад']], resize_keyboard: true } }
-    );
-    return;
+<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=659-70">Цветовое кодирование статусов</a>
+`,
+  { 
+    reply_markup: { keyboard: [['Назад']], resize_keyboard: true },
+    parse_mode: 'HTML'
   }
+  );
+  return;
+}
+
 
   // --- Предложить доработку ---
   if (lower === '/suggest' || lower === 'предложить доработку') {
