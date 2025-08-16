@@ -16,9 +16,11 @@ import time
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CSV_URL = "https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Google-Sheets/main/components.csv"
 
+# Инициализация бота с обработкой конфликтов
 bot = Bot(
     token=BOT_TOKEN,
-    default=DefaultBotProperties(parse_mode="HTML")
+    default=DefaultBotProperties(parse_mode="HTML"),
+    session_timeout=60  # Увеличиваем таймаут сессии
 )
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
@@ -128,10 +130,25 @@ async def type_chosen(message: types.Message, state: FSMContext):
 async def query_input(message: types.Message, state: FSMContext):
     data = await state.get_data()
     results = await search_components(message.text, data["type"])
+    
     if results:
-        await message.answer(f"Найдено: {len(results)}\n\n" + "\n\n".join(results))
+        # Разбиваем длинные сообщения на части
+        message_parts = []
+        current_part = f"Найдено: {len(results)}\n\n"
+        
+        for result in results:
+            if len(current_part) + len(result) > 4000:  # Лимит Telegram
+                message_parts.append(current_part)
+                current_part = ""
+            current_part += result + "\n\n"
+        
+        message_parts.append(current_part)
+        
+        for part in message_parts:
+            await message.answer(part)
     else:
         await message.answer(f'Компоненты по запросу "{message.text}" не найдены.')
+    
     await state.clear()
     await message.answer("Вы в главном меню:", reply_markup=main_menu)
 
@@ -180,9 +197,13 @@ async def support(message: types.Message):
         )
     )
 
-# --- Запуск ---
+# --- Запуск с обработкой конфликтов ---
 async def main():
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # Убедимся, что нет других запущенных экземпляров
+    try:
+        asyncio.run(main())
+    except asyncio.CancelledError:
+        pass
