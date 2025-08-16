@@ -334,15 +334,31 @@ def health_check():
     return {"status": "Bot is running"}
 
 def run_fastapi():
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=10000,
+        # Важно для стабильности на Render:
+        timeout_keep_alive=60,
+        limit_concurrency=100
+    )
 
 async def run_bot():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    # Для Render Web Service
-    fastapi_thread = Thread(target=run_fastapi, daemon=True)
+    # Настройка для стабильной работы на Render
+    fastapi_thread = Thread(
+        target=run_fastapi,
+        daemon=True,
+        name="FastAPI Thread"
+    )
     fastapi_thread.start()
     
-    # Для бота
-    asyncio.run(run_bot())
+    # Запуск бота с обработкой ошибок
+    try:
+        asyncio.run(run_bot())
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print("Bot stopped gracefully")
