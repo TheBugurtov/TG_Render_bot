@@ -3,6 +3,7 @@ import aiohttp
 import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -15,7 +16,11 @@ import time
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CSV_URL = "https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Google-Sheets/main/components.csv"
 
-bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
+# Инициализация бота с HTML-разметкой по умолчанию
+bot = Bot(
+    token=BOT_TOKEN,
+    default=DefaultBotProperties(parse_mode="HTML")
+)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
@@ -92,7 +97,7 @@ async def go_back(message: types.Message, state: FSMContext):
 
 # --- Найти компонент ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "найти компонент")
-async def ask_type(message: types.Message):
+async def ask_type(message: types.Message, state: FSMContext):
     kb = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Мобильный компонент"), KeyboardButton(text="Веб-компонент")],
