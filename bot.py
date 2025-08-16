@@ -83,9 +83,13 @@ async def search_components(query, type_):
         
         # Проверяем точное совпадение запроса с любым из тегов
         if query in tags:
-            if type_ == "mobile" and r["File"].strip() == "App Components":
+            file_name = r["File"].strip()
+
+            if type_ == "mobile" and file_name == "App Components":
                 filtered.append(r)
-            elif type_ == "web" and r["File"].strip() != "App Components":
+            elif type_ == "icon" and file_name == "Icons":
+                filtered.append(r)
+            elif type_ == "web" and file_name not in ("App Components", "Icons"):
                 filtered.append(r)
 
     return filtered
@@ -109,7 +113,7 @@ async def start_cmd(message: types.Message):
 async def search_start(message: types.Message, state: FSMContext):
     kb = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Мобильный компонент"), KeyboardButton(text="Веб-компонент")],
+            [KeyboardButton(text="Мобильный компонент"), KeyboardButton(text="Веб-компонент"), KeyboardButton(text="Иконка")],
             [KeyboardButton(text="Отмена")]
         ],
         resize_keyboard=True
@@ -128,6 +132,8 @@ async def type_chosen(message: types.Message, state: FSMContext):
         await state.update_data(type="mobile")
     elif message.text == "Веб-компонент":
         await state.update_data(type="web")
+    elif message.text == "Иконка":
+        await state.update_data(type="icon")
     else:
         return
     
@@ -311,10 +317,10 @@ async def support(message: types.Message):
 1. <a href="https://confluence.mts.ru/pages/viewpage.action?pageId=607687434">Авторизуйтесь в корпоративном боте</a>
 2. <a href="https://t.me/+90sy0C1fFPwzNTY6">Вступите в группу DS Community</a>
 
-Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">ознакомьтесь с инструкцией.</a>
+Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">ознакомьтесь с инструкцией.</a>
 
 ➡️ По вопросам обращайтесь на почту kuskova@mts.ru
-Кускова Юлия — Design Lead МТС GRANAT
+Кускова Юлия — Design Lead МТС GRANАТ
 """)
 
 # --- Запуск ---
