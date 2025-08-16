@@ -3,10 +3,10 @@ import aiohttp
 import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from aiogram.utils import executor
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
+from aiogram.filters import Command
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.context import FSMContext
 import csv
 import io
 import time
@@ -17,15 +17,15 @@ CSV_URL = "https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Goo
 
 bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
 storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
+dp = Dispatcher(storage=storage)
 
 # --- Главное меню ---
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton("Найти компонент")],
-        [KeyboardButton("Изучить гайды"), KeyboardButton("Предложить доработку")],
-        [KeyboardButton("Добавить иконку или логотип"), KeyboardButton("Посмотреть последние изменения")],
-        [KeyboardButton("Поддержка")]
+        [KeyboardButton(text="Найти компонент")],
+        [KeyboardButton(text="Изучить гайды"), KeyboardButton(text="Предложить доработку")],
+        [KeyboardButton(text="Добавить иконку или логотип"), KeyboardButton(text="Посмотреть последние изменения")],
+        [KeyboardButton(text="Поддержка")]
     ],
     resize_keyboard=True
 )
@@ -81,26 +81,29 @@ async def search_components(query, type_):
     return [f"<b>{r['Component']}</b> из <b>{r['File']}</b>\n{r['Link']}" for r in filtered]
 
 # --- Команды ---
-@dp.message_handler(commands=["start"])
+@dp.message(Command("start"))
 async def start_cmd(message: types.Message):
     await message.answer("Добрый день!\nЯ помощник Дизайн-системы.", reply_markup=main_menu)
 
-@dp.message_handler(lambda msg: msg.text.lower() == "назад")
+@dp.message(lambda msg: msg.text and msg.text.lower() == "назад")
 async def go_back(message: types.Message, state: FSMContext):
-    await state.finish()
+    await state.clear()
     await message.answer("Вы в главном меню:", reply_markup=main_menu)
 
 # --- Найти компонент ---
-@dp.message_handler(lambda msg: msg.text.lower() == "найти компонент")
+@dp.message(lambda msg: msg.text and msg.text.lower() == "найти компонент")
 async def ask_type(message: types.Message):
     kb = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton("Мобильный компонент"), KeyboardButton("Веб-компонент")], [KeyboardButton("Назад")]],
+        keyboard=[
+            [KeyboardButton(text="Мобильный компонент"), KeyboardButton(text="Веб-компонент")],
+            [KeyboardButton(text="Назад")]
+        ],
         resize_keyboard=True
     )
     await message.answer("Выберите тип компонента:", reply_markup=kb)
-    await SearchFlow.choose_type.set()
+    await state.set_state(SearchFlow.choose_type)
 
-@dp.message_handler(state=SearchFlow.choose_type)
+@dp.message(SearchFlow.choose_type)
 async def type_chosen(message: types.Message, state: FSMContext):
     if message.text == "Мобильный компонент":
         await state.update_data(type="mobile")
@@ -108,10 +111,13 @@ async def type_chosen(message: types.Message, state: FSMContext):
         await state.update_data(type="web")
     else:
         return
-    await message.answer("Введите название компонента:", reply_markup=ReplyKeyboardMarkup([[KeyboardButton("Назад")]], resize_keyboard=True))
-    await SearchFlow.input_query.set()
+    await message.answer(
+        "Введите название компонента:",
+        reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Назад")]], resize_keyboard=True)
+    )
+    await state.set_state(SearchFlow.input_query)
 
-@dp.message_handler(state=SearchFlow.input_query)
+@dp.message(SearchFlow.input_query)
 async def query_input(message: types.Message, state: FSMContext):
     data = await state.get_data()
     results = await search_components(message.text, data["type"])
@@ -119,30 +125,45 @@ async def query_input(message: types.Message, state: FSMContext):
         await message.answer(f"Найдено: {len(results)}\n\n" + "\n\n".join(results))
     else:
         await message.answer(f'Компоненты по запросу "{message.text}" не найдены.')
-    await state.finish()
+    await state.clear()
     await message.answer("Вы в главном меню:", reply_markup=main_menu)
 
 # --- Остальные пункты меню ---
-@dp.message_handler(lambda msg: msg.text.lower() == "изучить гайды")
+@dp.message(lambda msg: msg.text and msg.text.lower() == "изучить гайды")
 async def guides(message: types.Message):
-    await message.answer("""Хранилище правил и рекомендаций дизайн-системы в Figma — <a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20673">Granat Guides</a>""", reply_markup=ReplyKeyboardMarkup([[KeyboardButton("Назад")]], resize_keyboard=True))
+    await message.answer(
+        """Хранилище правил и рекомендаций дизайн-системы в Figma — <a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20673">Granat Guides</a>""",
+        reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Назад")]], resize_keyboard=True)
+    )
 
-@dp.message_handler(lambda msg: msg.text.lower() == "предложить доработку")
+@dp.message(lambda msg: msg.text and msg.text.lower() == "предложить доработку")
 async def suggest(message: types.Message):
-    await message.answer("➡️ Нашли баг? Заводите задачу в GitLab.", reply_markup=ReplyKeyboardMarkup([[KeyboardButton("Назад")]], resize_keyboard=True))
+    await message.answer(
+        "➡️ Нашли баг? Заводите задачу в GitLab.",
+        reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Назад")]], resize_keyboard=True)
+    )
 
-@dp.message_handler(lambda msg: msg.text.lower() == "добавить иконку или логотип")
+@dp.message(lambda msg: msg.text and msg.text.lower() == "добавить иконку или логотип")
 async def add_icon(message: types.Message):
-    await message.answer("➡️ Ознакомьтесь с требованиями к иконкам в GitLab.", reply_markup=ReplyKeyboardMarkup([[KeyboardButton("Назад")]], resize_keyboard=True))
+    await message.answer(
+        "➡️ Ознакомьтесь с требованиями к иконкам в GitLab.",
+        reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Назад")]], resize_keyboard=True)
+    )
 
-@dp.message_handler(lambda msg: msg.text.lower() == "посмотреть последние изменения")
+@dp.message(lambda msg: msg.text and msg.text.lower() == "посмотреть последние изменения")
 async def changes(message: types.Message):
     await message.answer("Последние изменения в DS GRANAT: https://t.me/c/1397080567/12194")
 
-@dp.message_handler(lambda msg: msg.text.lower() == "поддержка")
+@dp.message(lambda msg: msg.text and msg.text.lower() == "поддержка")
 async def support(message: types.Message):
-    await message.answer("➡️ Закрытая группа DS Community в Telegram\n\n1. Авторизуйтесь в корпоративном боте\n2. Вступите в группу", reply_markup=ReplyKeyboardMarkup([[KeyboardButton("Назад")]], resize_keyboard=True))
+    await message.answer(
+        "➡️ Закрытая группа DS Community в Telegram\n\n1. Авторизуйтесь в корпоративном боте\n2. Вступите в группу",
+        reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Назад")]], resize_keyboard=True)
+    )
 
 # --- Запуск ---
+async def main():
+    await dp.start_polling(bot)
+
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+    asyncio.run(main())
