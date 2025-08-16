@@ -92,6 +92,9 @@ async def search_components(query, type_):
             elif type_ == "web" and file_name not in ("App Components", "Icons"):
                 filtered.append(r)
 
+    # Сортируем результаты по названию компонента (по алфавиту)
+    filtered.sort(key=lambda x: x["Component"].lower())
+    
     return filtered
 
 async def send_large_message(chat_id: int, text: str, delay: float = 0.5):
@@ -310,7 +313,6 @@ async def changes(message: types.Message):
         'Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">ознакомьтесь с инструкцией</a>',
         parse_mode="HTML"
     )
-
 
 # --- Поддержка (полный оригинальный текст) ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "поддержка")
