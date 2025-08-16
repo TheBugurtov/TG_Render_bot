@@ -321,5 +321,36 @@ async def support(message: types.Message):
 async def main():
     await dp.start_polling(bot)
 
+# ====== Добавьте этот блок в конец файла ======
+from fastapi import FastAPI
+import uvicorn
+
+app = FastAPI()
+
+@app.get("/")
+def health_check():
+    return {"status": "Bot is running"}
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    # Выбираем режим запуска в зависимости от окружения
+    import os
+    if os.getenv('RENDER'):  # Если запускаем на Render
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        tasks = [
+            loop.create_task(main()),
+            loop.create_task(uvicorn.run(app, host="0.0.0.0", port=10000))
+        ]
+        
+        try:
+            loop.run_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            for task in tasks:
+                task.cancel()
+            loop.close()
+    else:  # Локальный запуск
+        asyncio.run(main())

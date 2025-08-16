@@ -1,2 +1,4 @@
 aiogram==3.21.0
 aiohttp==3.9.5
+fastapi==0.95.2
+uvicorn==0.22.0
