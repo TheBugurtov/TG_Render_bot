@@ -167,7 +167,7 @@ async def show_results_batch(message: types.Message, state: FSMContext):
     data = await state.get_data()
     results = data["all_results"]
     shown = data["shown"]
-    batch_size = 5  # Показываем по 5 результатов за раз
+    batch_size = 10  # Показываем по 10 результатов за раз
     
     # Форматируем текущую порцию результатов
     batch = results[shown:shown+batch_size]
@@ -199,8 +199,14 @@ async def show_results_batch(message: types.Message, state: FSMContext):
         )
         await state.set_state(SearchFlow.show_more)
     else:
-        await state.clear()
-        await message.answer("Все результаты показаны.", reply_markup=main_menu)
+        await message.answer(
+            "Все результаты показаны. Введите новый запрос или нажмите 'Отмена'",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text="Отмена")]],
+                resize_keyboard=True
+            )
+        )
+        await state.set_state(SearchFlow.input_query)
 
 @dp.message(SearchFlow.show_more)
 async def handle_show_more(message: types.Message, state: FSMContext):
@@ -208,11 +214,14 @@ async def handle_show_more(message: types.Message, state: FSMContext):
         await show_results_batch(message, state)
     else:
         data = await state.get_data()
-        await state.clear()
         await message.answer(
-            f"Поиск завершен. Найдено {len(data['all_results'])} компонентов.",
-            reply_markup=main_menu
+            f"Найдено {len(data['all_results'])} компонентов. Введите новый запрос или нажмите 'Отмена'",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text="Отмена")]],
+                resize_keyboard=True
+            )
         )
+        await state.set_state(SearchFlow.input_query)
 
 # --- Изучить гайды (полный оригинальный текст) ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "изучить гайды")
