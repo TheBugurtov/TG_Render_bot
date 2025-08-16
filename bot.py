@@ -326,6 +326,7 @@ from fastapi import FastAPI
 import uvicorn
 from threading import Thread
 import asyncio
+import os
 
 app = FastAPI()
 
@@ -337,8 +338,7 @@ def run_fastapi():
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=10000,
-        # Важно для стабильности на Render:
+        port=int(os.getenv("PORT", 10000)),  # ✅ Render подставит свой порт
         timeout_keep_alive=60,
         limit_concurrency=100
     )
@@ -347,7 +347,7 @@ async def run_bot():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    # Настройка для стабильной работы на Render
+    # FastAPI запускаем в отдельном потоке
     fastapi_thread = Thread(
         target=run_fastapi,
         daemon=True,
@@ -355,7 +355,7 @@ if __name__ == "__main__":
     )
     fastapi_thread.start()
     
-    # Запуск бота с обработкой ошибок
+    # aiogram — в основном asyncio loop
     try:
         asyncio.run(run_bot())
     except KeyboardInterrupt:
