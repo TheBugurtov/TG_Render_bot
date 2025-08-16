@@ -214,8 +214,7 @@ async def show_results_batch(message: types.Message, state: FSMContext):
         await state.set_state(SearchFlow.show_more)
     else:
         await message.answer(
-            "Все результаты показаны. " \
-            "Введите новый запрос или нажмите 'Отмена'",
+            "Все результаты показаны.\nВведите новый запрос или нажмите 'Отмена'",
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[[KeyboardButton(text="Отмена")]],
                 resize_keyboard=True
