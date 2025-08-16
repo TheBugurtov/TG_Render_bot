@@ -36,7 +36,9 @@ main_menu = ReplyKeyboardMarkup(
 
 # --- FSM ---
 class SearchFlow(StatesGroup):
+    choose_type = State()
     input_query = State()
+    show_more = State()
 
 # --- Кэш CSV ---
 component_cache = None
@@ -100,6 +102,30 @@ async def start_cmd(message: types.Message):
 
 @dp.message(lambda msg: msg.text and msg.text.lower() == "найти компонент")
 async def search_start(message: types.Message, state: FSMContext):
+    kb = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Мобильный компонент"), KeyboardButton(text="Веб-компонент")],
+            [KeyboardButton(text="Отмена")]
+        ],
+        resize_keyboard=True
+    )
+    await message.answer("Выберите тип компонента:", reply_markup=kb)
+    await state.set_state(SearchFlow.choose_type)
+
+@dp.message(SearchFlow.choose_type)
+async def type_chosen(message: types.Message, state: FSMContext):
+    if message.text.lower() == "отмена":
+        await state.clear()
+        await message.answer("Поиск отменён", reply_markup=main_menu)
+        return
+        
+    if message.text == "Мобильный компонент":
+        await state.update_data(type="mobile")
+    elif message.text == "Веб-компонент":
+        await state.update_data(type="web")
+    else:
+        return
+    
     await message.answer(
         "Введите название компонента:",
         reply_markup=ReplyKeyboardMarkup(
@@ -110,13 +136,14 @@ async def search_start(message: types.Message, state: FSMContext):
     await state.set_state(SearchFlow.input_query)
 
 @dp.message(SearchFlow.input_query)
-async def process_search(message: types.Message, state: FSMContext):
+async def query_input(message: types.Message, state: FSMContext):
     if message.text.lower() == "отмена":
         await state.clear()
         await message.answer("Поиск отменён", reply_markup=main_menu)
         return
 
-    results = await search_components(message.text, "web")
+    data = await state.get_data()
+    results = await search_components(message.text, data["type"])
     
     if not results:
         await message.answer(
@@ -128,25 +155,66 @@ async def process_search(message: types.Message, state: FSMContext):
         )
         return
     
-    formatted_results = [
+    # Сохраняем все результаты для пагинации
+    await state.update_data(
+        all_results=results,
+        shown=0,
+        query=message.text
+    )
+    await show_results_batch(message, state)
+
+async def show_results_batch(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    results = data["all_results"]
+    shown = data["shown"]
+    batch_size = 5  # Показываем по 5 результатов за раз
+    
+    # Форматируем текущую порцию результатов
+    batch = results[shown:shown+batch_size]
+    formatted = [
         f"<b>{r['Component']}</b> из <b>{r['File']}</b>\n{r['Link']}"
-        for r in results
+        for r in batch
     ]
     
-    await send_large_message(
-        message.chat.id,
-        f"Найдено: {len(results)}\n\n" + "\n\n".join(formatted_results)
+    # Отправляем результаты
+    await message.answer(
+        f"Найдено {len(results)}. Показано {shown+1}-{min(shown+len(batch), len(results))}:\n\n" +
+        "\n\n".join(formatted)
     )
     
-    await message.answer(
-        "Введите следующий запрос или нажмите 'Отмена'",
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[KeyboardButton(text="Отмена")]],
-            resize_keyboard=True
+    # Обновляем состояние
+    new_shown = shown + len(batch)
+    await state.update_data(shown=new_shown)
+    
+    # Если есть еще результаты - предлагаем показать еще
+    if new_shown < len(results):
+        await message.answer(
+            "Показать еще?",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[
+                    [KeyboardButton(text="Да"), KeyboardButton(text="Нет")]
+                ],
+                resize_keyboard=True
+            )
         )
-    )
+        await state.set_state(SearchFlow.show_more)
+    else:
+        await state.clear()
+        await message.answer("Все результаты показаны.", reply_markup=main_menu)
 
-# --- Изучить гайды (точная оригинальная версия) ---
+@dp.message(SearchFlow.show_more)
+async def handle_show_more(message: types.Message, state: FSMContext):
+    if message.text.lower() == "да":
+        await show_results_batch(message, state)
+    else:
+        data = await state.get_data()
+        await state.clear()
+        await message.answer(
+            f"Поиск завершен. Найдено {len(data['all_results'])} компонентов.",
+            reply_markup=main_menu
+        )
+
+# --- Изучить гайды (полный оригинальный текст) ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "изучить гайды")
 async def guides(message: types.Message):
     await send_large_message(message.chat.id, """
@@ -171,7 +239,7 @@ async def guides(message: types.Message):
 <a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=659-70">Цветовое кодирование статусов</a>
 """)
 
-# --- Предложить доработку (точная оригинальная версия) ---
+# --- Предложить доработку (полный оригинальный текст) ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "предложить доработку")
 async def suggest(message: types.Message):
     await send_large_message(message.chat.id, """
@@ -188,7 +256,7 @@ async def suggest(message: types.Message):
 ⏳ Команда дизайн-системы реагирует на запрос в порядке очереди в течение 3 рабочих дней.
 """)
 
-# --- Добавить иконку или логотип (точная оригинальная версия) ---
+# --- Добавить иконку или логотип (полный оригинальный текст) ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "добавить иконку или логотип")
 async def add_icon(message: types.Message):
     await send_large_message(message.chat.id, """
@@ -213,12 +281,12 @@ async def add_icon(message: types.Message):
 Чтобы добавить продуктовую иконку или логотип в ДС, создайте запрос <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=29711-16375&t=DumT4AudgflUKzRs-4">в GitLab.</a>
 """)
 
-# --- Посмотреть последние изменения (точная оригинальная версия) ---
+# --- Посмотреть последние изменения (полный оригинальный текст) ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "посмотреть последние изменения")
 async def changes(message: types.Message):
     await message.answer("Последние изменения в DS GRANAT: https://t.me/c/1397080567/12194")
 
-# --- Поддержка (точная оригинальная версия) ---
+# --- Поддержка (полный оригинальный текст) ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "поддержка")
 async def support(message: types.Message):
     await send_large_message(message.chat.id, """
