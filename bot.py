@@ -16,7 +16,6 @@ import time
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CSV_URL = "https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Google-Sheets/main/components.csv"
 
-# Инициализация бота с HTML-разметкой по умолчанию
 bot = Bot(
     token=BOT_TOKEN,
     default=DefaultBotProperties(parse_mode="HTML")
@@ -118,7 +117,10 @@ async def type_chosen(message: types.Message, state: FSMContext):
         return
     await message.answer(
         "Введите название компонента:",
-        reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Назад")]], resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="Назад")]],
+            resize_keyboard=True
+        )
     )
     await state.set_state(SearchFlow.input_query)
 
@@ -138,21 +140,30 @@ async def query_input(message: types.Message, state: FSMContext):
 async def guides(message: types.Message):
     await message.answer(
         """Хранилище правил и рекомендаций дизайн-системы в Figma — <a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20673">Granat Guides</a>""",
-        reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Назад")]], resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="Назад")]],
+            resize_keyboard=True
+        )
     )
 
 @dp.message(lambda msg: msg.text and msg.text.lower() == "предложить доработку")
 async def suggest(message: types.Message):
     await message.answer(
         "➡️ Нашли баг? Заводите задачу в GitLab.",
-        reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Назад")]], resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="Назад")]],
+            resize_keyboard=True
+        )
     )
 
 @dp.message(lambda msg: msg.text and msg.text.lower() == "добавить иконку или логотип")
 async def add_icon(message: types.Message):
     await message.answer(
         "➡️ Ознакомьтесь с требованиями к иконкам в GitLab.",
-        reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Назад")]], resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="Назад")]],
+            resize_keyboard=True
+        )
     )
 
 @dp.message(lambda msg: msg.text and msg.text.lower() == "посмотреть последние изменения")
@@ -163,7 +174,10 @@ async def changes(message: types.Message):
 async def support(message: types.Message):
     await message.answer(
         "➡️ Закрытая группа DS Community в Telegram\n\n1. Авторизуйтесь в корпоративном боте\n2. Вступите в группу",
-        reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Назад")]], resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="Назад")]],
+            resize_keyboard=True
+        )
     )
 
 # --- Запуск ---
