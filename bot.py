@@ -304,12 +304,13 @@ async def add_icon(message: types.Message):
 # --- Посмотреть последние изменения (полный оригинальный текст) ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "посмотреть последние изменения")
 async def changes(message: types.Message):
-await message.answer(
-    'Последние изменения в DS GRANAT (<a href="https://t.me/c/1397080567/12194">смотреть</a>)\n\n'
-    'Если у вас нет доступа, <a href="https://confluence.mts.ru/pages/viewpage.action?pageId=607687434">авторизуйтесь в корпоративном боте</a>\n\n'
-    'Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">ознакомьтесь с инструкцией</a>',
-    parse_mode="HTML"
-)
+    await message.answer(
+        'Последние изменения в DS GRANAT (<a href="https://t.me/c/1397080567/12194">смотреть</a>)\n\n'
+        'Если у вас нет доступа, <a href="https://confluence.mts.ru/pages/viewpage.action?pageId=607687434">авторизуйтесь в корпоративном боте</a>\n\n'
+        'Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">ознакомьтесь с инструкцией</a>',
+        parse_mode="HTML"
+    )
+
 
 # --- Поддержка (полный оригинальный текст) ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "поддержка")
@@ -319,27 +320,27 @@ async def support(message: types.Message):
 
 Добавьтесь в коммьюнити дизайн-системы в Telegram. Здесь вы сможете получать всю самую свежую информацию, новости и обновления, задавать вопросы разработчикам и дизайнерам, а также общаться с коллегами, которые используют дизайн-систему.
 
-1. <a href="https://confluence.mts.ru/pages/viewpage.action?pageId=607687434">Авторизуйтесь в корпоративном боте</a>
+1. <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">Авторизуйтесь в корпоративном боте</a>
 2. <a href="https://t.me/+90sy0C1fFPwzNTY6">Вступите в группу DS Community</a>
 
 Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">ознакомьтесь с инструкцией.</a>
 
 ➡️ По вопросам обращайтесь на почту kuskova@mts.ru
-Кускова Юлия — Design Lead МТС GRANАТ
+Кускова Юлия — Design Lead МТС GRANAT
 """)
 
 # --- Запуск ---
-async def main():
-    await dp.start_polling(bot)
-
-# ====== Добавьте этот блок в конец файла ======
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 import uvicorn
 from threading import Thread
-import asyncio
-import os
 
 app = FastAPI()
+
+@app.middleware("http")
+async def handle_head_request(request: Request, call_next):
+    if request.method == "HEAD":
+        return Response(status_code=200)
+    return await call_next(request)
 
 @app.get("/")
 def health_check():
@@ -349,7 +350,7 @@ def run_fastapi():
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=int(os.getenv("PORT", 10000)),  # ✅ Render подставит свой порт
+        port=int(os.getenv("PORT", 10000)),
         timeout_keep_alive=60,
         limit_concurrency=100
     )
@@ -358,7 +359,6 @@ async def run_bot():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    # FastAPI запускаем в отдельном потоке
     fastapi_thread = Thread(
         target=run_fastapi,
         daemon=True,
@@ -366,7 +366,6 @@ if __name__ == "__main__":
     )
     fastapi_thread.start()
     
-    # aiogram — в основном asyncio loop
     try:
         asyncio.run(run_bot())
     except KeyboardInterrupt:
