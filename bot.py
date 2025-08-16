@@ -72,12 +72,17 @@ async def search_components(query, type_):
     if not records:
         return []
 
-    q = (query or "").lower().strip()
+    # Нормализуем запрос: нижний регистр, убираем лишние пробелы
+    query = ' '.join((query or "").lower().strip().split())
+    
     filtered = []
 
     for r in records:
-        tags = (r.get("Tags", "") or "").lower().replace(" ", "").split(",")
-        if any(q in tag for tag in tags):
+        # Нормализуем теги: нижний регистр, разбиваем по запятым, убираем пробелы вокруг
+        tags = [tag.strip() for tag in (r.get("Tags", "") or "").lower().split(",")]
+        
+        # Проверяем точное совпадение запроса с любым из тегов
+        if query in tags:
             if type_ == "mobile" and r["File"].strip() == "App Components":
                 filtered.append(r)
             elif type_ == "web" and r["File"].strip() != "App Components":
