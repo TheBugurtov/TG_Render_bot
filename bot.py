@@ -192,7 +192,7 @@ async def show_results_batch(message: types.Message, state: FSMContext):
     
     # Отправляем результаты
     await message.answer(
-        f"Всего {len(results)}. Показано {shown+1}из{min(shown+len(batch), len(results))}:\n\n" +
+        f"Найдено: {len(results)}.  Показано {shown+1} из {min(shown+len(batch), len(results))}:\n\n" +
         "\n\n".join(formatted)
     )
     
@@ -214,7 +214,8 @@ async def show_results_batch(message: types.Message, state: FSMContext):
         await state.set_state(SearchFlow.show_more)
     else:
         await message.answer(
-            "Все результаты показаны. Введите новый запрос или нажмите 'Отмена'",
+            "Все результаты показаны. " \
+            "Введите новый запрос или нажмите 'Отмена'",
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[[KeyboardButton(text="Отмена")]],
                 resize_keyboard=True
