@@ -324,6 +324,8 @@ async def main():
 # ====== Добавьте этот блок в конец файла ======
 from fastapi import FastAPI
 import uvicorn
+from threading import Thread
+import asyncio
 
 app = FastAPI()
 
@@ -331,26 +333,16 @@ app = FastAPI()
 def health_check():
     return {"status": "Bot is running"}
 
+def run_fastapi():
+    uvicorn.run(app, host="0.0.0.0", port=10000)
+
+async def run_bot():
+    await dp.start_polling(bot)
+
 if __name__ == "__main__":
-    # Выбираем режим запуска в зависимости от окружения
-    import os
-    if os.getenv('RENDER'):  # Если запускаем на Render
-        import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        tasks = [
-            loop.create_task(main()),
-            loop.create_task(uvicorn.run(app, host="0.0.0.0", port=10000))
-        ]
-        
-        try:
-            loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            for task in tasks:
-                task.cancel()
-            loop.close()
-    else:  # Локальный запуск
-        asyncio.run(main())
+    # Для Render
+    fastapi_thread = Thread(target=run_fastapi, daemon=True)
+    fastapi_thread.start()
+    
+    # Для бота
+    asyncio.run(run_bot())
