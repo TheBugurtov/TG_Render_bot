@@ -183,7 +183,7 @@ async def show_results_batch(message: types.Message, state: FSMContext):
     # Форматируем текущую порцию результатов
     batch = results[shown:shown+batch_size]
     formatted = [
-        f"<b>{r['Component']}</b> из <b>{r['File']}</b>\n<a href='{r['Link']}'>Открыть в Figma</a>"
+        f"<a href='{r['Link']}'>{r['Component']}</a> из {r['File']}"
         for r in batch
     ]
     
@@ -305,7 +305,7 @@ async def add_icon(message: types.Message):
 @dp.message(lambda msg: msg.text and msg.text.lower() == "посмотреть последние изменения")
 async def changes(message: types.Message):
     await message.answer(
-        'Последние изменения в DS GRANAT (<a href="https://t.me/c/1397080567/12194">смотреть</a>)\n\n'
+        '<a href="https://t.me/c/1397080567/12194">Последние изменения в DS GRANAT</a>)\n\n'
         'Если у вас нет доступа, <a href="https://confluence.mts.ru/pages/viewpage.action?pageId=607687434">авторизуйтесь в корпоративном боте</a>\n\n'
         'Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">ознакомьтесь с инструкцией</a>',
         parse_mode="HTML"
