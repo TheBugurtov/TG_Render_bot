@@ -185,16 +185,25 @@ async def show_results_batch(message: types.Message, state: FSMContext):
     
     # Форматируем текущую порцию результатов
     batch = results[shown:shown+batch_size]
-    formatted = [
-        f"<a href='{r['Link']}'>{r['Component']}</a> из {r['File']}"
-        for r in batch
-    ]
-    
-    # Отправляем результаты
+
+    # Заголовок (счётчик)
     await message.answer(
-        f"Найдено: {len(results)}.  Показано {shown+1} из {min(shown+len(batch), len(results))}:\n\n" +
-        "\n\n".join(formatted)
+        f"Найдено: {len(results)}.  Показано {shown+1} из {min(shown+len(batch), len(results))}:"
     )
+
+    # Отправляем каждый компонент с картинкой
+    for r in batch:
+        text = f"<a href='{r['Link']}'>{r['Component']}</a> из {r['File']}"
+        image_url = r.get("Image", "").replace('=IMAGE("', "").replace('")', "").strip()
+        if image_url:
+            try:
+                await bot.send_photo(message.chat.id, photo=image_url, caption=text)
+            except Exception as e:
+                # Если картинка не загрузилась — отправим только текст
+                print("Ошибка отправки фото:", e)
+                await message.answer(text)
+        else:
+            await message.answer(text)
     
     # Обновляем состояние
     new_shown = shown + len(batch)
