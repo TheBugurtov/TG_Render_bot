@@ -245,21 +245,21 @@ async def guides(message: types.Message):
 
 Быстрые ссылки на материалы:
 
-<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=313-8196">Гайд по типографике</a>
+<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=313-8196">🔠 Гайд по типографике</a>
 
-<a href="https://www.figma.com/design/iqTCxAPRJJm6UlANLlYfva/Variables?node-id=48097-1187">Иерархия цвета: cветлая и темная тема</a>
+<a href="https://www.figma.com/design/iqTCxAPRJJm6UlANLlYfva/Variables?node-id=48097-1187">🌓 Иерархия цвета: cветлая и темная тема</a>
 
-Правила отрисовки <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=547-206394">интерфейсных иконок</a> и <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=23895-7907">продуктовых иконок</a>
+✏️ Правила отрисовки <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=547-206394">интерфейсных иконок</a> и <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=23895-7907">продуктовых иконок</a>
 
-<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=154-386">Кнопки: допустимая темизация, иерахия, расположение и пр.</a>
+<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=154-386">🖲️ Кнопки: допустимая темизация, иерахия, расположение и пр.</a>
 
-<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=154-385">Скелетная загрузка</a>
+<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=154-385">🦴 Скелетная загрузка</a>
 
-<a href="https://www.figma.com/design/oZGlxnWyOHTAgG6cyLkNJh/Web-Components-Molecules-2.0?node-id=141917-4145">Карточки в вебе</a>
+<a href="https://www.figma.com/design/oZGlxnWyOHTAgG6cyLkNJh/Web-Components-Molecules-2.0?node-id=141917-4145">🪪 Карточки в вебе</a>
 
-<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=178-386">Модальные окна</a>
+<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=178-386">💬 Модальные окна</a>
 
-<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=659-70">Цветовое кодирование статусов</a>
+<a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=659-70">🎨 Цветовое кодирование статусов</a>
 """)
 
 # --- Предложить доработку (полный оригинальный текст) ---
@@ -267,10 +267,10 @@ async def guides(message: types.Message):
 async def suggest(message: types.Message):
     await send_large_message(message.chat.id, """
 ➡️ Нашли баг в работе компонента Granat в Figma?
-Заведите запрос на доработку <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab.</a>
+Заведите запрос на доработку <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (VPN).</a>
 
 ➡️ Есть предложение добавить новый компонент или доработать текущий?
-Ознакомьтесь <a href="https://www.figma.com/design/Bew9jPI8yO0fclFUBJ22Nu/DS-Components-Process?node-id=4217-110&t=GlXxEhaJGkfzNspM-4">с блок-схемой принятия решений.</a> Если ваше предложение не носит локальную специфику, заведите запрос на доработку <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab.</a>
+Ознакомьтесь <a href="https://www.figma.com/design/Bew9jPI8yO0fclFUBJ22Nu/DS-Components-Process?node-id=4217-110&t=GlXxEhaJGkfzNspM-4">с блок-схемой принятия решений.</a> Если ваше предложение не носит локальную специфику, заведите запрос на доработку <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (VPN).</a>
 
 Для работы с gitlab.services.mts.ru нужно включать корпоративный VPN и быть авторизованным под корпоративным логином и паролем.
 
@@ -286,22 +286,22 @@ async def add_icon(message: types.Message):
 ➡️ Интерфейсные иконки
 
 Недостающие интерфейсные иконки продукт создает своими силами или нанимает подрядчика. Созданные иконки проходят ревью и согласование у дизайн лида или арт-директора продукта.
-Ознакомьтесь <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">с требованиями к иконкам.</a>
+Ознакомьтесь <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=547-206394">с требованиями к иконкам.</a>
 
 Иконка нарисована?
 
-Для создания запроса на публикацию используется <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">GitLab.</a> Прикрепите к запросу ссылку на готовый компонент.
+Для создания запроса на публикацию используется <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">GitLab (VPN).</a> Прикрепите к запросу ссылку на готовый компонент.
 
 Дизайн-система спланирует ревью компонента в спринт в соответствии с текущими приоритетами. При успешном прохождении ревью дизайнер ДС добавит иконку в библиотеку и опубликует обновление. Если иконка не соответствует гайдам, дизайнер ДС оставит фидбек в виде комментария к запросу продукта в GitLab.
 
 ➡️ Продуктовые иконки и логотипы
 
-Продуктовые иконки для мобильных приложений создаются по <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">экосистемному гайду.</a>
-Для логотипов веб-сервисов существуют <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=29711-16375&t=DumT4AudgflUKzRs-4">компоненты-шаблоны.</a>
+Продуктовые иконки для мобильных приложений создаются по <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=23895-7907">экосистемному гайду.</a>
+Для логотипов веб-сервисов существуют <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=547-206394">компоненты-шаблоны.</a>
 
 Любую новую иконку или логотип необходимо согласовать с Департаментом Маркетинговых Коммуникаций.
 
-Чтобы добавить продуктовую иконку или логотип в ДС, создайте запрос <a href="https://www.figma.com/design/a3nZmvTc8B9cZcrke9goCE/Icons?node-id=29711-16375&t=DumT4AudgflUKzRs-4">в GitLab.</a>
+Чтобы добавить продуктовую иконку или логотип в ДС, создайте запрос <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (VPN).</a>
 """)
 
 # --- Посмотреть последние изменения (полный оригинальный текст) ---
@@ -309,8 +309,8 @@ async def add_icon(message: types.Message):
 async def changes(message: types.Message):
     await message.answer(
         '<a href="https://t.me/c/1397080567/12194">Последние изменения в DS GRANAT</a>\n\n'
-        'Если у вас нет доступа, <a href="https://confluence.mts.ru/pages/viewpage.action?pageId=607687434">авторизуйтесь в корпоративном боте</a>\n\n'
-        'Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">ознакомьтесь с инструкцией</a>',
+        'Если у вас нет доступа, <a href="https://t.me/mts_guard_bot">авторизуйтесь в корпоративном боте</a>\n\n'
+        'Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages/viewpage.action?pageId=607687434">ознакомьтесь с инструкцией</a>',
         parse_mode="HTML"
     )
 
@@ -322,10 +322,10 @@ async def support(message: types.Message):
 
 Добавьтесь в коммьюнити дизайн-системы в Telegram. Здесь вы сможете получать всю самую свежую информацию, новости и обновления, задавать вопросы разработчикам и дизайнерам, а также общаться с коллегами, которые используют дизайн-систему.
 
-1. <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">Авторизуйтесь в корпоративном боте</a>
+1. <a href="https://t.me/mts_guard_bot">Авторизуйтесь в корпоративном боте</a>
 2. <a href="https://t.me/+90sy0C1fFPwzNTY6">Вступите в группу DS Community</a>
 
-Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">ознакомьтесь с инструкцией.</a>
+Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages/viewpage.action?pageId=607687434">ознакомьтесь с инструкцией.</a>
 
 ➡️ По вопросам обращайтесь на почту kuskova@mts.ru
 Кускова Юлия — Design Lead МТС GRANAT
