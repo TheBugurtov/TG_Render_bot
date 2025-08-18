@@ -164,11 +164,13 @@ async def send_large_message(chat_id: int, text: str, delay: float = 0.5):
 # --- Команды ---
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
+    print("LOG DEBUG:", message.text)
     await log_action(message.from_user.username or str(message.from_user.id), "Start command")
     await message.answer("Добрый день!\nЯ помощник Дизайн-системы.", reply_markup=main_menu)
 
 @dp.message(lambda msg: msg.text and msg.text.lower() == "найти компонент")
 async def search_start(message: types.Message, state: FSMContext):
+    print("LOG DEBUG:", message.text)
     await log_action(message.from_user.username or str(message.from_user.id), "Search component started")
     kb = ReplyKeyboardMarkup(
         keyboard=[
@@ -185,6 +187,7 @@ async def type_chosen(message: types.Message, state: FSMContext):
     username = message.from_user.username or str(message.from_user.id)
     
     if message.text.lower() == "отмена":
+        print("LOG DEBUG:", message.text)
         await log_action(username, "Search canceled at type selection")
         await state.clear()
         await message.answer("Поиск отменён", reply_markup=main_menu)
@@ -192,12 +195,15 @@ async def type_chosen(message: types.Message, state: FSMContext):
         
     if message.text == "Мобильный компонент":
         await state.update_data(type="mobile")
+        print("LOG DEBUG:", message.text)
         await log_action(username, "Selected mobile component type")
     elif message.text == "Веб-компонент":
         await state.update_data(type="web")
+        print("LOG DEBUG:", message.text)
         await log_action(username, "Selected web component type")
     elif message.text == "Иконка":
         await state.update_data(type="icon")
+        print("LOG DEBUG:", message.text)
         await log_action(username, "Selected icon type")
     else:
         return
@@ -216,6 +222,7 @@ async def query_input(message: types.Message, state: FSMContext):
     username = message.from_user.username or str(message.from_user.id)
     
     if message.text.lower() == "отмена":
+        print("LOG DEBUG:", message.text)
         await log_action(username, "Search canceled at query input")
         await state.clear()
         await message.answer("Поиск отменён", reply_markup=main_menu)
@@ -223,6 +230,7 @@ async def query_input(message: types.Message, state: FSMContext):
 
     data = await state.get_data()
     query = message.text
+    print("LOG DEBUG:", message.text)
     await log_action(username, f"Search query: {query} (type: {data['type']})")
     
     results = await search_components(query, data["type"])
@@ -297,9 +305,11 @@ async def handle_show_more(message: types.Message, state: FSMContext):
     username = message.from_user.username or str(message.from_user.id)
     
     if message.text.lower() == "да":
+        print("LOG DEBUG:", message.text)
         await log_action(username, "Requested more search results")
         await show_results_batch(message, state)
     else:
+        print("LOG DEBUG:", message.text)
         await log_action(username, "Stopped showing more results")
         await message.answer(
             f"Введите новый запрос или нажмите 'Отмена'",
@@ -313,6 +323,7 @@ async def handle_show_more(message: types.Message, state: FSMContext):
 # --- Изучить гайды ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "изучить гайды")
 async def guides(message: types.Message):
+    print("LOG DEBUG:", message.text)
     await log_action(message.from_user.username or str(message.from_user.id), "Viewed guides")
     await send_large_message(message.chat.id, """
 Хранилище правил и рекомендаций дизайн-системы в Figma — <a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20673">Granat Guides</a>
@@ -339,6 +350,7 @@ async def guides(message: types.Message):
 # --- Предложить доработку ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "предложить доработку")
 async def suggest(message: types.Message):
+    print("LOG DEBUG:", message.text)
     await log_action(message.from_user.username or str(message.from_user.id), "Viewed suggestions")
     await send_large_message(message.chat.id, """
 ➡️ Нашли баг в работе компонента Granat в Figma?
@@ -357,6 +369,7 @@ async def suggest(message: types.Message):
 # --- Добавить иконку или логотип ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "добавить иконку или логотип")
 async def add_icon(message: types.Message):
+    print("LOG DEBUG:", message.text)
     await log_action(message.from_user.username or str(message.from_user.id), "Viewed add icon info")
     await send_large_message(message.chat.id, """
 ➡️ Интерфейсные иконки
@@ -383,6 +396,7 @@ async def add_icon(message: types.Message):
 # --- Посмотреть последние изменения ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "посмотреть последние изменения")
 async def changes(message: types.Message):
+    print("LOG DEBUG:", message.text)
     await log_action(message.from_user.username or str(message.from_user.id), "Viewed recent changes")
     await message.answer(
         '<a href="https://t.me/c/1397080567/12194">Последние изменения в DS GRANAT</a>\n\n'
@@ -394,6 +408,7 @@ async def changes(message: types.Message):
 # --- Поддержка ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "поддержка")
 async def support(message: types.Message):
+    print("LOG DEBUG:", message.text)
     await log_action(message.from_user.username or str(message.from_user.id), "Viewed support info")
     await send_large_message(message.chat.id, """
 ➡️ Закрытая группа DS Community в Telegram
