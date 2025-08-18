@@ -1,6 +1,8 @@
 import os
 import aiohttp
 import asyncio
+import json
+import functools
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.client.default import DefaultBotProperties
@@ -35,32 +37,48 @@ dp = Dispatcher(storage=storage)
 def init_google_sheets():
     try:
         if not GOOGLE_SHEETS_CREDS:
-            raise ValueError("Google Sheets credentials not found in environment variables")
+            print("Google Sheets credentials not found in environment variables")
+            return None
             
         scope = ['https://spreadsheets.google.com/feeds',
                  'https://www.googleapis.com/auth/drive']
         
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(
-            eval(GOOGLE_SHEETS_CREDS), scope)
+        # Используем json.loads вместо eval для безопасности
+        creds_dict = json.loads(GOOGLE_SHEETS_CREDS)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
         return client
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
     except Exception as e:
         print(f"Error initializing Google Sheets: {e}")
-        return None
+    return None
 
-# --- Логирование в Google Sheets ---
+# --- Логирование в Google Sheets (асинхронное) ---
 async def log_action(username: str, action: str):
+    loop = asyncio.get_event_loop()
     try:
         client = init_google_sheets()
         if not client:
+            print("Google Sheets client not initialized")
             return False
             
-        sheet = client.open_by_key(GOOGLE_SHEET_KEY).worksheet(GOOGLE_SHEET_TAB_NAME)
+        # Выносим синхронные операции в отдельный поток
+        sheet = await loop.run_in_executor(
+            None,
+            lambda: client.open_by_key(GOOGLE_SHEET_KEY).worksheet(GOOGLE_SHEET_TAB_NAME)
+        )
         
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         row = [now, username, action]
         
-        sheet.append_row(row)
+        # Асинхронное добавление строки
+        await loop.run_in_executor(
+            None,
+            lambda: sheet.append_row(row)
+        )
+        
+        print(f"Successfully logged action: {username} - {action}")
         return True
     except Exception as e:
         print(f"Error logging action to Google Sheets: {e}")
@@ -324,12 +342,12 @@ async def suggest(message: types.Message):
     await log_action(message.from_user.username or str(message.from_user.id), "Viewed suggestions")
     await send_large_message(message.chat.id, """
 ➡️ Нашли баг в работе компонента Granat в Figma?
-Заведите запрос на доработку <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (VPN).</a>
+Заведите запрос на доработку <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (доступно под корпоративным VPN).</a>
 
 ➡️ Есть предложение добавить новый компонент или доработать текущий?
-Ознакомьтесь <a href="https://www.figma.com/design/Bew9jPI8yO0fclFUBJ22Nu/DS-Components-Process?node-id=4217-110&t=GlXxEhaJGkfzNspM-4">с блок-схемой принятия решений.</a> Если ваше предложение не носит локальную специфику, заведите запрос на доработку <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (VPN).</a>
+Ознакомьтесь <a href="https://www.figma.com/design/Bew9jPI8yO0fclFUBJ22Nu/DS-Components-Process?node-id=4217-110&t=GlXxEhaJGkfzNspM-4">с блок-схемой принятия решений.</a> Если ваше предложение не носит локальную специфику, заведите запрос на доработку <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (доступно под корпоративным VPN).</a>
 
-Для работы с gitlab.services.mts.ru нужно включать корпоративный VPN и быть авторизованным под корпоративным логином и паролем.
+❗️ Для работы с gitlab.services.mts.ru нужно включать корпоративный VPN и быть авторизованным под корпоративным логином и паролем.
 
 🔗 Чтобы коммуникация была быстрой и эффективной, просим прикладывать прямые ссылки на все материалы, касающиеся запроса: макет до и после, best practices, исследование, скрины или видео.
 
@@ -348,7 +366,7 @@ async def add_icon(message: types.Message):
 
 Иконка нарисована?
 
-Для создания запроса на публикацию используется <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">GitLab (VPN).</a> Прикрепите к запросу ссылку на готовый компонент.
+Для создания запроса на публикацию используется <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">GitLab (доступно под корпоративным VPN).</a> Прикрепите к запросу ссылку на готовый компонент.
 
 Дизайн-система спланирует ревью компонента в спринт в соответствии с текущими приоритетами. При успешном прохождении ревью дизайнер ДС добавит иконку в библиотеку и опубликует обновление. Если иконка не соответствует гайдам, дизайнер ДС оставит фидбек в виде комментария к запросу продукта в GitLab.
 
@@ -359,7 +377,7 @@ async def add_icon(message: types.Message):
 
 Любую новую иконку или логотип необходимо согласовать с Департаментом Маркетинговых Коммуникаций.
 
-Чтобы добавить продуктовую иконку или логотип в ДС, создайте запрос <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (VPN).</a>
+Чтобы добавить продуктовую иконку или логотип в ДС, создайте запрос <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (доступно под корпоративным VPN).</a>
 """)
 
 # --- Посмотреть последние изменения ---
@@ -394,11 +412,17 @@ async def support(message: types.Message):
 # --- Тестовая команда для проверки логирования ---
 @dp.message(Command("test_log"))
 async def test_log(message: types.Message):
-    success = await log_action(message.from_user.username or str(message.from_user.id), "Test log entry")
+    print("Received /test_log command")  # Логируем получение команды
+    username = message.from_user.username or str(message.from_user.id)
+    print(f"Trying to log action for user: {username}")
+    
+    success = await log_action(username, "Test log entry")
     if success:
+        print("Log successful")
         await message.answer("✅ Запись в таблицу добавлена успешно")
     else:
-        await message.answer("❌ Ошибка записи в таблицу")
+        print("Log failed")
+        await message.answer("❌ Ошибка записи в таблицу. Проверьте логи сервера.")
 
 # --- Запуск ---
 from fastapi import FastAPI, Request, Response
