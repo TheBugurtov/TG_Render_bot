@@ -11,10 +11,18 @@ from aiogram.fsm.context import FSMContext
 import csv
 import io
 import time
+from datetime import datetime
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 # --- Настройки ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CSV_URL = "https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Google-Sheets/main/components.csv"
+
+# Настройки Google Sheets
+GOOGLE_SHEET_KEY = "1xNtFTHDf2HzzPqO4sckikDtFc8LLjArPoH0t9YLw2po"
+GOOGLE_SHEET_TAB_NAME = "Logs"
+GOOGLE_SHEETS_CREDS = os.getenv("GOOGLE_SHEETS_CREDS")
 
 bot = Bot(
     token=BOT_TOKEN,
@@ -22,6 +30,41 @@ bot = Bot(
 )
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
+
+# --- Инициализация Google Sheets ---
+def init_google_sheets():
+    try:
+        if not GOOGLE_SHEETS_CREDS:
+            raise ValueError("Google Sheets credentials not found in environment variables")
+            
+        scope = ['https://spreadsheets.google.com/feeds',
+                 'https://www.googleapis.com/auth/drive']
+        
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(
+            eval(GOOGLE_SHEETS_CREDS), scope)
+        client = gspread.authorize(creds)
+        return client
+    except Exception as e:
+        print(f"Error initializing Google Sheets: {e}")
+        return None
+
+# --- Логирование в Google Sheets ---
+async def log_action(username: str, action: str):
+    try:
+        client = init_google_sheets()
+        if not client:
+            return False
+            
+        sheet = client.open_by_key(GOOGLE_SHEET_KEY).worksheet(GOOGLE_SHEET_TAB_NAME)
+        
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row = [now, username, action]
+        
+        sheet.append_row(row)
+        return True
+    except Exception as e:
+        print(f"Error logging action to Google Sheets: {e}")
+        return False
 
 # --- Главное меню ---
 main_menu = ReplyKeyboardMarkup(
@@ -72,16 +115,12 @@ async def search_components(query, type_):
     if not records:
         return []
 
-    # Нормализуем запрос: нижний регистр, убираем лишние пробелы
     query = ' '.join((query or "").lower().strip().split())
-    
     filtered = []
 
     for r in records:
-        # Нормализуем теги: нижний регистр, разбиваем по запятым, убираем пробелы вокруг
         tags = [tag.strip() for tag in (r.get("Tags", "") or "").lower().split(",")]
         
-        # Проверяем точное совпадение запроса с любым из тегов
         if query in tags:
             file_name = r["File"].strip()
 
@@ -92,13 +131,10 @@ async def search_components(query, type_):
             elif type_ == "web" and file_name not in ("App Components", "Icons"):
                 filtered.append(r)
 
-    # Сортируем результаты по названию компонента (по алфавиту)
     filtered.sort(key=lambda x: x["Component"].lower())
-    
     return filtered
 
 async def send_large_message(chat_id: int, text: str, delay: float = 0.5):
-    """Отправляет большое сообщение частями с задержкой"""
     max_length = 4000
     parts = [text[i:i+max_length] for i in range(0, len(text), max_length)]
     
@@ -110,10 +146,12 @@ async def send_large_message(chat_id: int, text: str, delay: float = 0.5):
 # --- Команды ---
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
+    await log_action(message.from_user.username or str(message.from_user.id), "Start command")
     await message.answer("Добрый день!\nЯ помощник Дизайн-системы.", reply_markup=main_menu)
 
 @dp.message(lambda msg: msg.text and msg.text.lower() == "найти компонент")
 async def search_start(message: types.Message, state: FSMContext):
+    await log_action(message.from_user.username or str(message.from_user.id), "Search component started")
     kb = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Мобильный компонент"), KeyboardButton(text="Веб-компонент"), KeyboardButton(text="Иконка")],
@@ -126,17 +164,23 @@ async def search_start(message: types.Message, state: FSMContext):
 
 @dp.message(SearchFlow.choose_type)
 async def type_chosen(message: types.Message, state: FSMContext):
+    username = message.from_user.username or str(message.from_user.id)
+    
     if message.text.lower() == "отмена":
+        await log_action(username, "Search canceled at type selection")
         await state.clear()
         await message.answer("Поиск отменён", reply_markup=main_menu)
         return
         
     if message.text == "Мобильный компонент":
         await state.update_data(type="mobile")
+        await log_action(username, "Selected mobile component type")
     elif message.text == "Веб-компонент":
         await state.update_data(type="web")
+        await log_action(username, "Selected web component type")
     elif message.text == "Иконка":
         await state.update_data(type="icon")
+        await log_action(username, "Selected icon type")
     else:
         return
     
@@ -151,17 +195,23 @@ async def type_chosen(message: types.Message, state: FSMContext):
 
 @dp.message(SearchFlow.input_query)
 async def query_input(message: types.Message, state: FSMContext):
+    username = message.from_user.username or str(message.from_user.id)
+    
     if message.text.lower() == "отмена":
+        await log_action(username, "Search canceled at query input")
         await state.clear()
         await message.answer("Поиск отменён", reply_markup=main_menu)
         return
 
     data = await state.get_data()
-    results = await search_components(message.text, data["type"])
+    query = message.text
+    await log_action(username, f"Search query: {query} (type: {data['type']})")
+    
+    results = await search_components(query, data["type"])
     
     if not results:
         await message.answer(
-            f'Компоненты по запросу "{message.text}" не найдены.',
+            f'Компоненты по запросу "{query}" не найдены.',
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[[KeyboardButton(text="Отмена")]],
                 resize_keyboard=True
@@ -169,11 +219,10 @@ async def query_input(message: types.Message, state: FSMContext):
         )
         return
     
-    # Сохраняем все результаты для пагинации
     await state.update_data(
         all_results=results,
         shown=0,
-        query=message.text
+        query=query
     )
     await show_results_batch(message, state)
 
@@ -181,17 +230,14 @@ async def show_results_batch(message: types.Message, state: FSMContext):
     data = await state.get_data()
     results = data["all_results"]
     shown = data["shown"]
-    batch_size = 10  # Показываем по 10 результатов за раз
+    batch_size = 10
     
-    # Форматируем текущую порцию результатов
     batch = results[shown:shown+batch_size]
 
-    # Заголовок (счётчик)
     await message.answer(
-        f"Найдено: {len(results)}.  Показано {shown+1} из {min(shown+len(batch), len(results))}:"
+        f"Найдено: {len(results)}. Показано {shown+1} из {min(shown+len(batch), len(results))}:"
     )
 
-    # Отправляем каждый компонент с картинкой
     for r in batch:
         text = f"<a href='{r['Link']}'>{r['Component']}</a> из {r['File']}"
         image_url = r.get("Image", "").replace('=IMAGE("', "").replace('")', "").strip()
@@ -199,17 +245,14 @@ async def show_results_batch(message: types.Message, state: FSMContext):
             try:
                 await bot.send_photo(message.chat.id, photo=image_url, caption=text)
             except Exception as e:
-                # Если картинка не загрузилась — отправим только текст
                 print("Ошибка отправки фото:", e)
                 await message.answer(text)
         else:
             await message.answer(text)
     
-    # Обновляем состояние
     new_shown = shown + len(batch)
     await state.update_data(shown=new_shown)
     
-    # Если есть еще результаты - предлагаем показать еще
     if new_shown < len(results):
         await message.answer(
             "Показать еще?",
@@ -233,10 +276,13 @@ async def show_results_batch(message: types.Message, state: FSMContext):
 
 @dp.message(SearchFlow.show_more)
 async def handle_show_more(message: types.Message, state: FSMContext):
+    username = message.from_user.username or str(message.from_user.id)
+    
     if message.text.lower() == "да":
+        await log_action(username, "Requested more search results")
         await show_results_batch(message, state)
     else:
-        data = await state.get_data()
+        await log_action(username, "Stopped showing more results")
         await message.answer(
             f"Введите новый запрос или нажмите 'Отмена'",
             reply_markup=ReplyKeyboardMarkup(
@@ -246,9 +292,10 @@ async def handle_show_more(message: types.Message, state: FSMContext):
         )
         await state.set_state(SearchFlow.input_query)
 
-# --- Изучить гайды (полный оригинальный текст) ---
+# --- Изучить гайды ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "изучить гайды")
 async def guides(message: types.Message):
+    await log_action(message.from_user.username or str(message.from_user.id), "Viewed guides")
     await send_large_message(message.chat.id, """
 Хранилище правил и рекомендаций дизайн-системы в Figma — <a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20673">Granat Guides</a>
 
@@ -271,9 +318,10 @@ async def guides(message: types.Message):
 <a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=659-70">🎨 Цветовое кодирование статусов</a>
 """)
 
-# --- Предложить доработку (полный оригинальный текст) ---
+# --- Предложить доработку ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "предложить доработку")
 async def suggest(message: types.Message):
+    await log_action(message.from_user.username or str(message.from_user.id), "Viewed suggestions")
     await send_large_message(message.chat.id, """
 ➡️ Нашли баг в работе компонента Granat в Figma?
 Заведите запрос на доработку <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (VPN).</a>
@@ -288,9 +336,10 @@ async def suggest(message: types.Message):
 ⏳ Команда дизайн-системы реагирует на запрос в порядке очереди в течение 3 рабочих дней.
 """)
 
-# --- Добавить иконку или логотип (полный оригинальный текст) ---
+# --- Добавить иконку или логотип ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "добавить иконку или логотип")
 async def add_icon(message: types.Message):
+    await log_action(message.from_user.username or str(message.from_user.id), "Viewed add icon info")
     await send_large_message(message.chat.id, """
 ➡️ Интерфейсные иконки
 
@@ -313,9 +362,10 @@ async def add_icon(message: types.Message):
 Чтобы добавить продуктовую иконку или логотип в ДС, создайте запрос <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (VPN).</a>
 """)
 
-# --- Посмотреть последние изменения (полный оригинальный текст) ---
+# --- Посмотреть последние изменения ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "посмотреть последние изменения")
 async def changes(message: types.Message):
+    await log_action(message.from_user.username or str(message.from_user.id), "Viewed recent changes")
     await message.answer(
         '<a href="https://t.me/c/1397080567/12194">Последние изменения в DS GRANAT</a>\n\n'
         'Если у вас нет доступа, <a href="https://t.me/mts_guard_bot">авторизуйтесь в корпоративном боте</a>\n\n'
@@ -323,9 +373,10 @@ async def changes(message: types.Message):
         parse_mode="HTML"
     )
 
-# --- Поддержка (полный оригинальный текст) ---
+# --- Поддержка ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "поддержка")
 async def support(message: types.Message):
+    await log_action(message.from_user.username or str(message.from_user.id), "Viewed support info")
     await send_large_message(message.chat.id, """
 ➡️ Закрытая группа DS Community в Telegram
 
@@ -339,6 +390,15 @@ async def support(message: types.Message):
 ➡️ По вопросам обращайтесь на почту kuskova@mts.ru
 Кускова Юлия — Design Lead МТС GRANAT
 """)
+
+# --- Тестовая команда для проверки логирования ---
+@dp.message(Command("test_log"))
+async def test_log(message: types.Message):
+    success = await log_action(message.from_user.username or str(message.from_user.id), "Test log entry")
+    if success:
+        await message.answer("✅ Запись в таблицу добавлена успешно")
+    else:
+        await message.answer("❌ Ошибка записи в таблицу")
 
 # --- Запуск ---
 from fastapi import FastAPI, Request, Response
