@@ -231,7 +231,7 @@ async def query_input(message: types.Message, state: FSMContext):
     data = await state.get_data()
     query = message.text
     print("LOG DEBUG:", message.text)
-    await log_action(username, f"Search query: {query} (type: {data['type']})")
+    await log_action(username, f"Поисковой запрос: {query} (тип: {data['type']})")
     
     results = await search_components(query, data["type"])
     
@@ -434,10 +434,10 @@ async def test_log(message: types.Message):
     success = await log_action(username, "Test log entry")
     if success:
         print("Log successful")
-        await message.answer("✅ Запись в таблицу добавлена успешно")
+        await message.answer("Запись в таблицу добавлена успешно")
     else:
         print("Log failed")
-        await message.answer("❌ Ошибка записи в таблицу. Проверьте логи сервера.")
+        await message.answer("Ошибка записи в таблицу. Проверьте логи сервера.")
 
 # --- Запуск ---
 from fastapi import FastAPI, Request, Response
