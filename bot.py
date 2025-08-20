@@ -138,19 +138,19 @@ async def search_components(query, type_):
 
     for r in records:
         tags = [tag.strip() for tag in (r.get("Tags", "") or "").lower().split(",")]
-        
+
         if query in tags:
             file_name = r["File"].strip()
-
             if type_ == "mobile" and file_name == "App Components":
                 filtered.append(r)
-            elif type_ == "icon" and file_name == "Icons":
+            elif type_ == "icon" and file_name in ("Icons", "Placeholders"):
                 filtered.append(r)
-            elif type_ == "web" and file_name not in ("App Components", "Icons"):
+            elif type_ == "web" and file_name not in ("App Components", "Icons", "Placeholders"):
                 filtered.append(r)
 
     filtered.sort(key=lambda x: x["Component"].lower())
     return filtered
+
 
 async def send_large_message(chat_id: int, text: str, delay: float = 0.5):
     max_length = 4000
@@ -166,7 +166,12 @@ async def send_large_message(chat_id: int, text: str, delay: float = 0.5):
 async def start_cmd(message: types.Message):
     print("LOG DEBUG:", message.text)
     await log_action(message.from_user.username or str(message.from_user.id), "Start command")
-    await message.answer("Добрый день!\nЯ помощник Дизайн-системы.", reply_markup=main_menu)
+    await message.answer(
+        'Добрый день!\n'
+        'Я помощник <a href="https://www.figma.com/files/855101281008648657/project/7717773/Library?fuid=1338884565519455641">дизайн-системы МТС GRANAT</a>.',
+        reply_markup=main_menu,
+        parse_mode="HTML"
+    )
 
 @dp.message(lambda msg: msg.text and msg.text.lower() == "найти компонент")
 async def search_start(message: types.Message, state: FSMContext):
@@ -174,7 +179,7 @@ async def search_start(message: types.Message, state: FSMContext):
     await log_action(message.from_user.username or str(message.from_user.id), "Начат поиск компонентов")
     kb = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Мобильный компонент"), KeyboardButton(text="Веб-компонент"), KeyboardButton(text="Иконка")],
+            [KeyboardButton(text="Мобильный компонент"), KeyboardButton(text="Веб-компонент"), KeyboardButton(text="Иконка или Заглушка")],
             [KeyboardButton(text="Отмена")]
         ],
         resize_keyboard=True
