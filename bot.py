@@ -179,7 +179,7 @@ async def search_start(message: types.Message, state: FSMContext):
     await log_action(message.from_user.username or str(message.from_user.id), "Начат поиск компонентов")
     kb = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Мобильный компонент"), KeyboardButton(text="Веб-компонент"), KeyboardButton(text="Иконка или Заглушка")],
+            [KeyboardButton(text="Мобильный компонент"), KeyboardButton(text="Веб-компонент"), KeyboardButton(text="Иконка или заглушка")],
             [KeyboardButton(text="Отмена")]
         ],
         resize_keyboard=True
