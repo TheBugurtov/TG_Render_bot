@@ -168,7 +168,7 @@ async def start_cmd(message: types.Message):
     await log_action(message.from_user.username or str(message.from_user.id), "Start command")
     await message.answer(
         'Добрый день!\n'
-        'Я помощник <a href="https://www.figma.com/files/855101281008648657/project/7717773/Library?fuid=1338884565519455641">дизайн-системы МТС GRANAT</a>.',
+        'Я помощник <a href="https://www.figma.com/files/855101281008648657/project/7717773/Library?fuid=1338884565519455641">дизайн-системы МТС GRANAT.</a>',
         reply_markup=main_menu,
         parse_mode="HTML"
     )
