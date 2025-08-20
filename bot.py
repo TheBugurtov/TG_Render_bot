@@ -206,10 +206,10 @@ async def type_chosen(message: types.Message, state: FSMContext):
         await state.update_data(type="web")
         print("LOG DEBUG:", message.text)
         await log_action(username, "Выбран поиск в веб-компонентах")
-    elif message.text == "Иконка":
+    elif message.text == "Иконка или заглушка":
         await state.update_data(type="icon")
         print("LOG DEBUG:", message.text)
-        await log_action(username, "Выбран поиск в иконках")
+        await log_action(username, "Выбран поиск в иконках и заглушках")
     else:
         return
     
