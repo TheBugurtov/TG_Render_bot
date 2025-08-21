@@ -60,8 +60,8 @@ dp = Dispatcher(storage=storage)
 # --- Middleware для rate limiting ---
 from aiogram import BaseMiddleware
 from aiogram.types import Message
-from aiogram.dispatcher.event.handler import CancelHandler
 from typing import Callable, Any
+
 HandlerType = Callable[[Message, dict], Any]
 
 class RateLimitMiddleware(BaseMiddleware):
@@ -69,7 +69,7 @@ class RateLimitMiddleware(BaseMiddleware):
         username = event.from_user.username or str(event.from_user.id)
         if not can_proceed(username):
             await event.answer("⏳ Слишком много запросов. Подождите немного.")
-            raise CancelHandler()  # останавливаем обработку этого сообщения
+            return  # просто прекращаем обработку, не вызываем handler
         return await handler(event, data)
 
 dp.update.middleware(RateLimitMiddleware())
