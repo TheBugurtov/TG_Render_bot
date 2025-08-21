@@ -43,7 +43,6 @@ def init_google_sheets():
         scope = ['https://spreadsheets.google.com/feeds',
                  'https://www.googleapis.com/auth/drive']
         
-        # Используем json.loads вместо eval для безопасности
         creds_dict = json.loads(GOOGLE_SHEETS_CREDS)
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
@@ -54,35 +53,60 @@ def init_google_sheets():
         print(f"Error initializing Google Sheets: {e}")
     return None
 
-# --- Логирование в Google Sheets (асинхронное) ---
-async def log_action(username: str, action: str):
+# --- Логирование через буфер ---
+log_buffer = []
+LOG_INTERVAL = 300  # 5 минут
+MAX_BUFFER_SIZE = 20  # Максимальный размер буфера перед принудительной отправкой
+
+def add_to_buffer(username: str, action: str):
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_buffer.append([now, username, action])
+    print(f"Buffered log: {username} - {action}")
+    
+    # Если буфер достиг максимального размера, отправляем сразу
+    if len(log_buffer) >= MAX_BUFFER_SIZE:
+        asyncio.create_task(flush_logs())
+
+async def flush_logs():
+    global log_buffer
+    if not log_buffer:
+        return
+
+    # Создаем копию буфера и очищаем оригинал
+    rows_to_write = log_buffer.copy()
+    log_buffer.clear()
+
     loop = asyncio.get_event_loop()
     try:
         client = init_google_sheets()
         if not client:
             print("Google Sheets client not initialized")
-            return False
-            
-        # Выносим синхронные операции в отдельный поток
+            # Возвращаем данные в буфер если не удалось инициализировать клиент
+            log_buffer.extend(rows_to_write)
+            return
+
         sheet = await loop.run_in_executor(
             None,
             lambda: client.open_by_key(GOOGLE_SHEET_KEY).worksheet(GOOGLE_SHEET_TAB_NAME)
         )
-        
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        row = [now, username, action]
-        
-        # Асинхронное добавление строки
+
+        # Массовая запись данных
         await loop.run_in_executor(
             None,
-            lambda: sheet.append_row(row)
+            lambda: sheet.append_rows(rows_to_write)
         )
         
-        print(f"Successfully logged action: {username} - {action}")
-        return True
+        print(f"✅ Flushed {len(rows_to_write)} logs to Google Sheets")
+
     except Exception as e:
-        print(f"Error logging action to Google Sheets: {e}")
-        return False
+        # При ошибке возвращаем данные обратно в буфер
+        log_buffer.extend(rows_to_write)
+        print(f"❌ Error flushing logs: {e}")
+
+async def log_worker():
+    while True:
+        await asyncio.sleep(LOG_INTERVAL)
+        await flush_logs()
 
 # --- Главное меню ---
 main_menu = ReplyKeyboardMarkup(
@@ -151,7 +175,6 @@ async def search_components(query, type_):
     filtered.sort(key=lambda x: x["Component"].lower())
     return filtered
 
-
 async def send_large_message(chat_id: int, text: str, delay: float = 0.5):
     max_length = 4000
     parts = [text[i:i+max_length] for i in range(0, len(text), max_length)]
@@ -161,11 +184,29 @@ async def send_large_message(chat_id: int, text: str, delay: float = 0.5):
         if len(parts) > 1:
             await asyncio.sleep(delay)
 
+# --- Обработчик для кнопки "Иконка или заглушка" ---
+@dp.message(lambda msg: msg.text and msg.text.lower() == "иконка или заглушка")
+async def icon_search_direct(message: types.Message, state: FSMContext):
+    username = message.from_user.username or str(message.from_user.id)
+    add_to_buffer(username, "Прямой поиск иконок/заглушек")
+    
+    # Прямой переход к поиску иконок
+    await state.update_data(type="icon")
+    
+    await message.answer(
+        "Введите название иконки или заглушки:",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="Отмена")]],
+            resize_keyboard=True
+        )
+    )
+    await state.set_state(SearchFlow.input_query)
+
 # --- Команды ---
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
-    print("LOG DEBUG:", message.text)
-    await log_action(message.from_user.username or str(message.from_user.id), "Start command")
+    username = message.from_user.username or str(message.from_user.id)
+    add_to_buffer(username, "Start command")
     await message.answer(
         'Добрый день!\n'
         'Я помощник <a href="https://www.figma.com/files/855101281008648657/project/7717773/Library?fuid=1338884565519455641">дизайн-системы МТС GRANAT.</a>',
@@ -175,8 +216,7 @@ async def start_cmd(message: types.Message):
 
 @dp.message(lambda msg: msg.text and msg.text.lower() == "найти компонент")
 async def search_start(message: types.Message, state: FSMContext):
-    print("LOG DEBUG:", message.text)
-    await log_action(message.from_user.username or str(message.from_user.id), "Начат поиск компонентов")
+    add_to_buffer(message.from_user.username or str(message.from_user.id), "Начат поиск компонентов")
     kb = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Мобильный компонент"), KeyboardButton(text="Веб-компонент"), KeyboardButton(text="Иконка или заглушка")],
@@ -192,24 +232,20 @@ async def type_chosen(message: types.Message, state: FSMContext):
     username = message.from_user.username or str(message.from_user.id)
     
     if message.text.lower() == "отмена":
-        print("LOG DEBUG:", message.text)
-        await log_action(username, "Поиск отменен на выборе типа компонента")
+        add_to_buffer(username, "Поиск отменен на выборе типа компонента")
         await state.clear()
         await message.answer("Поиск отменён", reply_markup=main_menu)
         return
         
     if message.text == "Мобильный компонент":
         await state.update_data(type="mobile")
-        print("LOG DEBUG:", message.text)
-        await log_action(username, "Выбран поиск в мобильных компонентах")
+        add_to_buffer(username, "Выбран поиск в мобильных компонентах")
     elif message.text == "Веб-компонент":
         await state.update_data(type="web")
-        print("LOG DEBUG:", message.text)
-        await log_action(username, "Выбран поиск в веб-компонентах")
+        add_to_buffer(username, "Выбран поиск в веб-компонентах")
     elif message.text == "Иконка или заглушка":
         await state.update_data(type="icon")
-        print("LOG DEBUG:", message.text)
-        await log_action(username, "Выбран поиск в иконках и заглушках")
+        add_to_buffer(username, "Выбран поиск в иконках и заглушках")
     else:
         return
     
@@ -227,16 +263,14 @@ async def query_input(message: types.Message, state: FSMContext):
     username = message.from_user.username or str(message.from_user.id)
     
     if message.text.lower() == "отмена":
-        print("LOG DEBUG:", message.text)
-        await log_action(username, "Отмена поиска, возврат в главное меню")
+        add_to_buffer(username, "Отмена поиска, возврат в главное меню")
         await state.clear()
         await message.answer("Поиск отменён", reply_markup=main_menu)
         return
 
     data = await state.get_data()
     query = message.text
-    print("LOG DEBUG:", message.text)
-    await log_action(username, f"Поисковой запрос: {query} (тип: {data['type']})")
+    add_to_buffer(username, f"Поисковой запрос: {query} (тип: {data['type']})")
     
     results = await search_components(query, data["type"])
     
@@ -310,14 +344,12 @@ async def handle_show_more(message: types.Message, state: FSMContext):
     username = message.from_user.username or str(message.from_user.id)
     
     if message.text.lower() == "да":
-        print("LOG DEBUG:", message.text)
-        await log_action(username, "Запрошен показ дополнительных результатов")
+        add_to_buffer(username, "Запрошен показ дополнительных результатов")
         await show_results_batch(message, state)
     else:
-        print("LOG DEBUG:", message.text)
-        await log_action(username, "Отказ от показа дополнительных результатов")
+        add_to_buffer(username, "Отказ от показа дополнительных результатов")
         await message.answer(
-            f"Введите новый запрос или нажмите 'Отмена'",
+            "Введите новый запрос или нажмите 'Отмена'",
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[[KeyboardButton(text="Отмена")]],
                 resize_keyboard=True
@@ -328,8 +360,7 @@ async def handle_show_more(message: types.Message, state: FSMContext):
 # --- Изучить гайды ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "изучить гайды")
 async def guides(message: types.Message):
-    print("LOG DEBUG:", message.text)
-    await log_action(message.from_user.username or str(message.from_user.id), "Просмотр гайдлайнов")
+    add_to_buffer(message.from_user.username or str(message.from_user.id), "Просмотр гайдлайнов")
     await send_large_message(message.chat.id, """
 Хранилище правил и рекомендаций дизайн-системы в Figma — <a href="https://www.figma.com/design/5ZYTwB6jw2wutqg60sc4Ff/Granat-Guides-WIP?node-id=181-20673">Granat Guides</a>
 
@@ -355,8 +386,7 @@ async def guides(message: types.Message):
 # --- Предложить доработку ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "предложить доработку")
 async def suggest(message: types.Message):
-    print("LOG DEBUG:", message.text)
-    await log_action(message.from_user.username or str(message.from_user.id), "Просмотр предложения доработки")
+    add_to_buffer(message.from_user.username or str(message.from_user.id), "Просмотр предложения доработки")
     await send_large_message(message.chat.id, """
 ➡️ Нашли баг в работе компонента Granat в Figma?
 Заведите запрос на доработку <a href="https://gitlab.services.mts.ru/digital-products/design-system/support/design/-/issues/new">в GitLab (доступно под корпоративным VPN).</a>
@@ -374,8 +404,7 @@ async def suggest(message: types.Message):
 # --- Добавить иконку или логотип ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "добавить иконку или логотип")
 async def add_icon(message: types.Message):
-    print("LOG DEBUG:", message.text)
-    await log_action(message.from_user.username or str(message.from_user.id), "Просмотр добавления иконки или логотипа")
+    add_to_buffer(message.from_user.username or str(message.from_user.id), "Просмотр добавления иконки или логотипа")
     await send_large_message(message.chat.id, """
 ➡️ Интерфейсные иконки
 
@@ -401,20 +430,18 @@ async def add_icon(message: types.Message):
 # --- Посмотреть последние изменения ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "посмотреть последние изменения")
 async def changes(message: types.Message):
-    print("LOG DEBUG:", message.text)
-    await log_action(message.from_user.username or str(message.from_user.id), "Просмотр последних изменений")
+    add_to_buffer(message.from_user.username or str(message.from_user.id), "Просмотр последних изменений")
     await message.answer(
         '<a href="https://t.me/c/1397080567/12194">Последние изменения в DS GRANAT</a>\n\n'
         'Если у вас нет доступа, <a href="https://t.me/mts_guard_bot">авторизуйтесь в корпоративном боте</a>\n\n'
-        'Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages/viewpage.action?pageId=607687434">ознакомьтесь с инструкцией</a>',
+        'Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">ознакомьтесь с инструкцией</a>',
         parse_mode="HTML"
     )
 
 # --- Поддержка ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "поддержка")
 async def support(message: types.Message):
-    print("LOG DEBUG:", message.text)
-    await log_action(message.from_user.username or str(message.from_user.id), "Просмотр поддержки")
+    add_to_buffer(message.from_user.username or str(message.from_user.id), "Просмотр поддержки")
     await send_large_message(message.chat.id, """
 ➡️ Закрытая группа DS Community в Telegram
 
@@ -423,7 +450,7 @@ async def support(message: types.Message):
 1. <a href="https://t.me/mts_guard_bot">Авторизуйтесь в корпоративном боте</a>
 2. <a href="https://t.me/+90sy0C1fFPwzNTY6">Вступите в группу DS Community</a>
 
-Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages/viewpage.action?pageId=607687434">ознакомьтесь с инструкцией.</a>
+Если не можете авторизоваться в корпоративном боте, <a href="https://confluence.mts.ru/pages.viewpage.action?pageId=607687434">ознакомьтесь с инструкцией.</a>
 
 ➡️ По вопросам обращайтесь на почту kuskova@mts.ru
 Кускова Юлия — Design Lead МТС GRANAT
@@ -432,17 +459,15 @@ async def support(message: types.Message):
 # --- Тестовая команда для проверки логирования ---
 @dp.message(Command("test_log"))
 async def test_log(message: types.Message):
-    print("Received /test_log command")  # Логируем получение команды
     username = message.from_user.username or str(message.from_user.id)
-    print(f"Trying to log action for user: {username}")
-    
-    success = await log_action(username, "Test log entry")
-    if success:
-        print("Log successful")
-        await message.answer("Запись в таблицу добавлена успешно")
-    else:
-        print("Log failed")
-        await message.answer("Ошибка записи в таблицу. Проверьте логи сервера.")
+    add_to_buffer(username, "Test log entry")
+    await message.answer("Запись добавлена в буфер логов")
+
+# --- Запуск воркера логирования при старте ---
+async def on_startup():
+    # Запускаем фоновую задачу для периодической отправки логов
+    asyncio.create_task(log_worker())
+    print("Log worker started")
 
 # --- Запуск ---
 from fastapi import FastAPI, Request, Response
@@ -471,6 +496,8 @@ def run_fastapi():
     )
 
 async def run_bot():
+    # Запускаем воркер логирования
+    await on_startup()
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
@@ -484,6 +511,8 @@ if __name__ == "__main__":
     try:
         asyncio.run(run_bot())
     except KeyboardInterrupt:
+        # При завершении пытаемся отправить оставшиеся логи
+        asyncio.run(flush_logs())
         pass
     finally:
         print("Bot stopped gracefully")
