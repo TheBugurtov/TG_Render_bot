@@ -17,6 +17,30 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
+# --- Rate Limiting ---
+user_timestamps = {}  # username -> list of временные метки
+RATE_LIMIT_COUNT = 5  # сколько сообщений можно отправлять за интервал
+RATE_LIMIT_INTERVAL = 10  # интервал в секундах
+
+def can_proceed(username: str) -> bool:
+    """Проверяет, можно ли пользователю отправить новое сообщение"""
+    now = time.time()
+    timestamps = user_timestamps.get(username, [])
+    
+    # оставляем только последние сообщения в интервале
+    timestamps = [t for t in timestamps if now - t < RATE_LIMIT_INTERVAL]
+    
+    if len(timestamps) >= RATE_LIMIT_COUNT:
+        # превышен лимит
+        user_timestamps[username] = timestamps  # обновляем очищенный список
+        return False
+    
+    # добавляем новую отметку времени
+    timestamps.append(now)
+    user_timestamps[username] = timestamps
+    return True
+
+
 # --- Настройки ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CSV_URL = "https://raw.githubusercontent.com/TheBugurtov/Figma-components-to-Google-Sheets/main/components.csv"
@@ -32,6 +56,21 @@ bot = Bot(
 )
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
+
+# --- Middleware для rate limiting ---
+from aiogram import BaseMiddleware
+from aiogram.types import Message
+from aiogram.dispatcher.handler import CancelHandler, HandlerType
+
+class RateLimitMiddleware(BaseMiddleware):
+    async def __call__(self, handler: HandlerType, event: Message, data: dict):
+        username = event.from_user.username or str(event.from_user.id)
+        if not can_proceed(username):
+            await event.answer("⏳ Слишком много запросов. Подождите немного.")
+            raise CancelHandler()  # останавливаем обработку этого сообщения
+        return await handler(event, data)
+
+dp.update.middleware(RateLimitMiddleware())
 
 # --- Инициализация Google Sheets ---
 def init_google_sheets():
