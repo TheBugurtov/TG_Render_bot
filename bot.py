@@ -59,19 +59,42 @@ dp = Dispatcher(storage=storage)
 
 # --- Middleware для rate limiting ---
 from aiogram import BaseMiddleware
-from aiogram.types import Message
+from aiogram.types import Update
 from typing import Callable, Any
 
-HandlerType = Callable[[Message, dict], Any]
+HandlerType = Callable[[Update, dict], Any]
 
 class RateLimitMiddleware(BaseMiddleware):
-    async def __call__(self, handler: HandlerType, event: Message, data: dict):
-        username = event.from_user.username or str(event.from_user.id)
-        if not can_proceed(username):
-            await event.answer("⏳ Слишком много запросов. Подождите немного.")
-            return  # просто прекращаем обработку, не вызываем handler
+    async def __call__(self, handler: HandlerType, event: Update, data: dict):
+        user = None
+
+        if event.message:
+            user = event.message.from_user
+        elif event.callback_query:
+            user = event.callback_query.from_user
+        elif event.inline_query:
+            user = event.inline_query.from_user
+        elif event.chosen_inline_result:
+            user = event.chosen_inline_result.from_user
+        elif event.poll_answer:
+            user = event.poll_answer.user
+
+        if user:
+            username_or_id = user.username or str(user.id)
+            if not can_proceed(username_or_id):
+                if event.message:
+                    await event.message.answer("⏳ Слишком много запросов. Подождите немного.")
+                elif event.callback_query:
+                    await event.callback_query.answer(
+                        "⏳ Слишком много запросов. Подождите немного.", show_alert=True
+                    )
+                elif event.inline_query:
+                    await event.inline_query.answer([], switch_pm_text="⏳ Слишком много запросов.", switch_pm_parameter="wait")
+                return
+
         return await handler(event, data)
 
+# Регистрируем middleware в Dispatcher
 dp.update.middleware(RateLimitMiddleware())
 
 # --- Инициализация Google Sheets ---
