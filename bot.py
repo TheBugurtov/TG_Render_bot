@@ -60,7 +60,9 @@ dp = Dispatcher(storage=storage)
 # --- Middleware для rate limiting ---
 from aiogram import BaseMiddleware
 from aiogram.types import Message
-from aiogram.dispatcher.handler import CancelHandler, HandlerType
+from aiogram.dispatcher.event.handler import CancelHandler
+from typing import Callable, Any
+HandlerType = Callable[[Message, dict], Any]
 
 class RateLimitMiddleware(BaseMiddleware):
     async def __call__(self, handler: HandlerType, event: Message, data: dict):
