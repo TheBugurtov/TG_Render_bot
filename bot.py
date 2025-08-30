@@ -178,7 +178,7 @@ main_menu = ReplyKeyboardMarkup(
         [KeyboardButton(text="Найти компонент")],
         [KeyboardButton(text="Изучить гайды"), KeyboardButton(text="Предложить доработку")],
         [KeyboardButton(text="Добавить иконку или логотип"), KeyboardButton(text="Посмотреть последние изменения")],
-        [KeyboardButton(text="Поддержка")]
+        [KeyboardButton(text="Поддержка"), KeyboardButton(text="FAQ")]
     ],
     resize_keyboard=True
 )
@@ -519,6 +519,53 @@ async def support(message: types.Message):
 ➡️ По вопросам обращайтесь на почту kuskova@mts.ru
 Кускова Юлия — Design Lead МТС GRANAT
 """)
+    
+# --- FAQ ---
+@dp.message(lambda msg: msg.text and msg.text.lower() == "faq")
+async def faq(message: types.Message):
+    add_to_buffer(
+        message.from_user.username or str(message.from_user.id),
+        "Просмотр FAQ"
+    )
+    await send_large_message(
+        message.chat.id,
+        """
+<b>Введение</b>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=33-146">Что такое DS GRANAT и зачем она нужна?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=29-134">Что такое базовая дизайн-система в рамках экосистемы?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2022-537">Где прочитать про дизайн-систему?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2035-1061">Что такое коммьюнити и чем оно полезно?</a>
+
+<b>Доступ, подключение и поддержка</b>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2022-528">Доступ к дизайн-системе для нового дизайнера</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2022-585">Как подключить дизайн-систему?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2035-1024">Где следить за обновлениями GRANAT?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=52-403">Как можно влиять на ДС?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2037-1126">Как тесно взаимодействовать с ДС?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2041-1289">Отправлен запрос через GitLab, а ответ не приходит. Что делать, когда ждать ответ?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2041-1344">Как давать обратную связь по библиотекам?</a>
+
+<b>Компоненты</b>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2037-1171">Какие компоненты нужно обязательно брать из дизайн-системы, а какие можно разрабатывать локально?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=33-184">Что можно менять в компонентах дизайн-системы?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=71-603">Что делать, если в спецификации компонента нет ответа на ваш вопрос?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2041-1344">Как давать обратную связь по библиотекам?</a>
+
+<b>Иконки</b>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=42-115">Почему нельзя копировать иконки?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=42-165">Что делать, если нет нужной иконки или нужного размера иконки?</a>
+
+<b>Токены и темы</b>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2041-1322">Как правильно работать с токенами, чтобы корректно переключались тёмная/светлая темы?</a>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2041-1330">Зачем в ДС токены с прозрачностью?</a>
+
+<b>Версии</b>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2041-1373">Какой смысл в переходе на G2?</a>
+
+<b>Ревью</b>
+• <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2042-1399">Кто проверяет на соответствие ДС?</a>
+"""
+    )
 
 # --- Тестовая команда для проверки логирования ---
 @dp.message(Command("test_log"))
