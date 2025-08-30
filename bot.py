@@ -546,7 +546,7 @@ async def faq(message: types.Message):
 • <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=71-603">Что делать, если в спецификации компонента нет ответа на ваш вопрос?</a>
 • <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=2041-1344">Как давать обратную связь по библиотекам?</a>
 
-🎨 Иконки</b>
+🎨 Иконки
 • <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=42-115">Почему нельзя копировать иконки?</a>
 • <a href="https://www.figma.com/design/a7UeDnUeJGZPx6AGBYpXTa/DS-GRANAT-FAQ?node-id=42-165">Что делать, если нет нужной иконки или нужного размера иконки?</a>
 
