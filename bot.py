@@ -522,7 +522,7 @@ async def support(message: types.Message):
     
 # --- FAQ ---
 @dp.message(lambda msg: msg.text and msg.text.lower() == "faq")
-async def support(message: types.Message):
+async def faq(message: types.Message):
     add_to_buffer(message.from_user.username or str(message.from_user.id), "Просмотр FAQ")
     await send_large_message(message.chat.id, """
 📘 Введение
